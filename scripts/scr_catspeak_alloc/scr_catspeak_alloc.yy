@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"scr_catspeak_alloc",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"scr_catspeak_alloc",
+  "parent":{
+    "name":"common",
+    "path":"folders/Catspeak/common.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

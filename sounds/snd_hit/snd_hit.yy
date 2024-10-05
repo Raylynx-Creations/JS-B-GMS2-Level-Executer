@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"snd_hit",
+  "audioGroupId":{
+    "name":"sound_group",
+    "path":"audiogroups/sound_group",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":0.233878,
+  "name":"snd_hit",
+  "parent":{
+    "name":"Sounds",
+    "path":"folders/Sonidos/Sounds.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_hit.ogg",
+  "type":0,
+  "volume":1.0,
+}

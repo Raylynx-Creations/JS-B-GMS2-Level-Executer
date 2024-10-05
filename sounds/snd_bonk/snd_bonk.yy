@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"snd_bonk",
+  "audioGroupId":{
+    "name":"sound_group",
+    "path":"audiogroups/sound_group",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":0.163354,
+  "name":"snd_bonk",
+  "parent":{
+    "name":"Sounds",
+    "path":"folders/Sonidos/Sounds.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_bonk.ogg",
+  "type":0,
+  "volume":1.0,
+}

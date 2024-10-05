@@ -1,0 +1,15 @@
+{
+    "song":["Keygen","Badland"],
+    "artist":[["Toby Fox",""],["Boom Kitty",""]],
+    "from":[["","Deltarune title.png"],["",""]],
+    "bg_slot":"image.png",
+    "song_type":["cut","cut"],
+    "level_by":["Cezar Andrade","Krosis.gif"],
+    "recreated_by":["No one xd","Krosis.gif"],
+    "level_type":"Normal",
+    "version":"1.0.1",
+    "color_level_type":{"r":0, "g":255, "b":255},
+    "difficulty":3,
+    "play_as":"Helicopter",
+    "hp":3
+}

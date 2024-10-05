@@ -1,0 +1,25 @@
+{
+  "$GMSound":"",
+  "%Name":"snd_cheering",
+  "audioGroupId":{
+    "name":"sound_group",
+    "path":"audiogroups/sound_group",
+  },
+  "bitDepth":1,
+  "bitRate":128,
+  "compression":0,
+  "conversionMode":0,
+  "duration":1.772698,
+  "name":"snd_cheering",
+  "parent":{
+    "name":"Sounds",
+    "path":"folders/Sonidos/Sounds.yy",
+  },
+  "preload":false,
+  "resourceType":"GMSound",
+  "resourceVersion":"2.0",
+  "sampleRate":44100,
+  "soundFile":"snd_cheering.ogg",
+  "type":0,
+  "volume":1.0,
+}

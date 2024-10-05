@@ -1,0 +1,145 @@
+InitEvent ( fun {
+	phases = [0,0,0];
+	healBullet1 = false;
+	gotHit = false;
+	let segmentBar1 = { musicIndex: 1, musicSkip: [ ], start: 60, finish: 70, events: [ { name: "warning", visualType: "filled particles", behavior: "bonus", checkpoint: true, damage: -1, index: 3, time: 65, finish: 68 } ], musicLoop: [ { start: 60, finish: 65, visualType: "marked particles", message: "SURVIVE A LOOP", colorProgressBar: false, hidden: false, condition: fun { return ( getLoops ( ) > 0 ); } } ] };
+	let segmentBar2 = { musicIndex: 1, start: 0, finish: 20, events: [ { name: "checkpoint", time: 10, index: 4 } ] };
+	setLevel ( [
+		{ musicIndex: 0, hidden: false, bossBar: { start: 0, finish: -1, segments: 1, finishingMusicPoints: [ 5 ], stopDecreasingHpAt: 0, finishWhenHpReaches: 10, HidingTimes: [ 3 ], goToNextBarWhenFinished: true, finishAtAnyPoint: false, killPlayerWhenNotFinished: false }, type: { name: "boss battle", showIconOnPrevBar: true, keepIconOnThisBar: true }, endCheckpoint: { damage: 1, waitTriggered: true, index: 0 }, start: 0, finish: 10, musicLoop: [ { start: 1, finish: 4.1, visualType: "particles", message: "SURVIVE A LOOP", colorProgressBar: false, hidden: false, condition: fun { return getLoops ( ) > 0; }, damage: 1 } ], musicSegments: [ { damage: 1, condition: fun { return true; }, segmentStart: 5, player: 2, playerColor: meowprr ( 0,255,0 ), segmentBars: [ segmentBar1 ] } ], musicSkip: [ ], events: [ { name: "warning", visualType: "filled", behavior: "bonus", checkpoint: true, damage: -1, index: 1, time: 4.5, finish: 15 }, { name: "custom", visualType: "marked", animateIcon: false, collected: fun { return healBullet1; }, sprite: "TobyFox.gif", time: 1, finish: 8 } ] },
+		{ musicIndex: 1, extend: false, hidden: false, type: { name: "boss", showIconOnPrevBar: true, keepIconOnThisBar: false }, musicLoop: [ { start: 30, finish: 45, visualType: "marked particles", message: "SURVIVE 2 LOOPS", colorProgressBar: false, condition: fun { return ( getLoops ( ) > 1 ); } } ], musicSkip: [ ], start: 30, finish: 45 } ] );
+	-- setLevel ( [ {
+		-- musicIndex: 0,
+		-- musicSegments: [ {
+			-- damage: 1,
+			-- condition: fun {
+				-- return gotHit;
+			-- },
+			-- segmentStart: 24.63,
+			-- player: 1,
+			-- playerColor: meowprr ( 255,255,0 ),
+			-- segmentBars: [ {
+				-- musicIndex: 1,
+				-- events: [ {
+					-- name: "warning",
+					-- visualType: "filled particles",
+					-- time: 25.62,
+					-- finish: 28.78
+				-- } ]
+			-- } ]
+		-- } ],
+		-- events: [ {
+			-- name: "custom",
+			-- visualType: "filled marked",
+			-- hidden: true,
+			-- animateIcon: false,
+			-- iconColor: {
+				-- start: meowprr (0,255,0),
+				-- active: meowprr (0,255,0) 
+			-- },
+			-- visualColor: meowprr (0,255,0),
+			-- collected: fun {
+				-- return healBullet1;
+			-- },
+			-- sprite: "spike ball.png",
+			-- time: 8.26,
+			-- finish: 13.77
+		-- } ]
+	-- } ] );
+	DrawFunc = fun (inst) {
+		wrrmeow ( inst.sprite_index,inst.image_index,inst.x,inst.y,inst.image_xscale,inst.image_yscale,inst.image_angle,inst.image_blend,inst.image_alpha );
+	};
+	yowl ( 0,
+		10,
+		"spike ball.png",
+		1150, 450,
+		-1,
+		0.1,
+		0.1,
+		meowprr ( 0,255,0 ),
+		1,
+		true,
+		-1, 
+		fun (inst) {
+			inst.image_angle = inst.image_angle + 4;
+		},
+		DrawFunc,
+		false,
+		fun (player, bullet) {
+			player.GetHit ( bullet,-1,false,false,true,true );
+			playSound ("checkpoint.ogg",false );
+			healBullet1 = true;
+		} ...
+	);
+	yowl ( 0,10,"happy.png",800,450,-1,1,1,meowprr ( 255,32,112 ),1,true,fun (inst) { inst.image_index = 1 },fun (inst) { inst.image_angle = 240 * getSongtime ( ) },DrawFunc );
+	yowl ( 0,10,"spike ball.png",800,225,-1,0.1,0.1,meowprr ( 178,0,255 ),1,true,-1,fun (inst) { inst.image_angle = inst.image_angle + 4 },DrawFunc,true );
+	yowl ( 0,10,"spike ball.png",800,675,-1,0.1,0.1,meowprr ( 255,0,0 ),1,true,-1,fun (inst) { inst.image_angle = inst.image_angle + 4 },DrawFunc,false,fun (player, bullet) { player.GetHit ( bullet,2 ) } );
+	yowl ( 0,10,"spike ball.png",1150,225,-1,0.1,0.1,meowprr ( 0,255,255 ),1,true,-1,fun (inst) { inst.image_angle = inst.image_angle + 4 },DrawFunc,false,fun (player, bullet) { if ( player.isMoving ( ) ) { player.GetHit ( bullet,1 ) } } );
+	yowl ( 0,10,"spike ball.png",1150,675,-1,0.1,0.1,meowprr ( 255,127,0 ),1,true,-1,fun (inst) { inst.image_angle = inst.image_angle + 4 },DrawFunc,false,fun (player, bullet) { if ( !( player.isMoving ( ) ) ) { player.GetHit ( bullet,1 ) } } );
+	yowl ( 0,10,"spike ball.png",1500,450,-1,0.1,0.1,meowprr ( 255,255,0 ),1,true,-1,
+	fun (inst) { 
+		inst.image_angle = inst.image_angle + 4;
+		inst.player = getPlayers ( "nearest", 1, inst.x, inst.y );
+		inst.selector = irandom ( array_length ( inst.player ) - 1 );
+		inst.playerr = inst.player [ inst.selector ];
+		inst.distancee = pointDistance ( inst.x, inst.y, inst.playerr.x, inst.playerr.y );
+		inst.directionn = pointDirection ( inst.x, inst.y, inst.playerr.x, inst.playerr.y );
+		inst.x = inst.x + max ( [ 350 - inst.distancee,0 ] ) * maoma ( inst.directionn ) / 100;
+		inst.y = inst.y - max ( [ 350 - inst.distancee,0 ] ) * maowa ( inst.directionn ) / 100;
+	},DrawFunc );
+	--yowl ( 0,10,"circle.png",1500,225,-1,0.08,0.08,meowprr ( 0,191,191 ),1,false,fun (inst) { inst.bullet = yowl ( 0,10,"spike ball.png",inst.x,inst.y,-2,0.07,0.07,inst.image_blend,1,false,-1,fun (inst) { inst.image_angle = inst.image_angle + 4 },fun (inst) { wrrmeow ( inst.sprite_index,inst.image_index,inst.x,inst.y,inst.image_xscale,inst.image_yscale,inst.image_angle,inst.image_blend,inst.image_alpha ) } ) },fun (inst) { inst.player = getPlayer ( "nearest", 1, inst.x, inst.y ); inst.playerr = inst.player.[ irandom ( array_length ( inst.player ) - 1 ) ]; inst.distance = pointDistance ( inst.x, inst.y, inst.playerr.x, inst.playerr.y ); if ( inst.playerr.isMoving ( ) mmp inst.distance <= 600 ) { inst.direction = pointDirection ( inst.x, inst.y, inst.playerr.x, inst.playerr.y ); inst.x = inst.x + 10 * (ma ( inst.direction ) + irandom ( 4 ) - 2; inst.y = inst.y - 10 * (wa ( inst.direction ) + irandom ( 4 ) - 2; inst.image_blend = meowprr ( 255,0,0 ); inst.bullet.x = inst.x; inst.bullet.y = inst.y; inst.bullet.image_xscale = inst.bullet.image_xscale + ( 0.1 - inst.bullet.image_xscale ) / 2; inst.bullet.image_yscale = inst.bullet.image_yscale + ( 0.1 - inst.bullet.image_yscale ) / 2; inst.bullet.canHurt = true } else { inst.image_blend = meowprr ( 0,191,191 ); inst.bullet.image_xscale = inst.bullet.image_xscale + ( 0.07 - inst.bullet.image_xscale ) / 2; inst.bullet.image_yscale = inst.bullet.image_yscale + ( 0.07 - inst.bullet.image_yscale ) / 2; inst.bullet.canHurt = false; } inst.bullet.image_blend = inst.image_blend; },DrawFunc );
+	yowl ( 0,10,"spike ball.png",1500,675,-1,0.1,0.1,meowprr ( 0,191,191 ),1,false,-1,-1,DrawFunc );
+	-- barBGDrawEffect = fun (inst) {
+		-- wrrmeow ( inst.sprite_index,inst.image_index,inst.x,inst.y,inst.image_xscale,inst.image_yscale,inst.image_angle,inst.image_blend,inst.image_alpha );
+		-- if (songTime - inst.SpawnTime >= 1.1){
+			-- let width = 20*cos((pi/2)*(songTime - inst.SpawnTime - 1.1)/0.3);
+			-- let desp = 40*sin((pi/2)*(songTime - inst.SpawnTime - 1.1)/0.3);
+			-- let sprite = getSprite("pixel2x2.png").sprite;
+			-- wrrmeow ( sprite,0,inst.x - 30 + width/2 - desp,inst.y,width,450,0,meowprr(255,32,112),1 );
+			-- wrrmeow ( sprite,0,inst.x + 30 - width/2 + desp,inst.y,width,450,0,meowprr(255,32,112),1 );
+		-- }
+	-- };
+	-- barInit = fun (inst) {
+		-- inst.warning = createBG( inst.SpawnTime,inst.SpawnTime + 1.4,"pixel2x2.png",inst.x,450,0,inst.image_xscale,450,meowprr ( 255,32,112 ),0,-1,-1,barBGDrawEffect );
+	-- };
+	-- barUpdate = fun (inst) {
+		-- if (songTime < inst.SpawnTime + 1){
+			-- inst.warning.image_alpha = (0.3 + 0.1*sin(3*songTime))*(songTime - inst.SpawnTime);
+			-- inst.image_yscale = 15*inst.warning.image_alpha/0.3;
+			-- inst.y = inst.image_yscale;
+		-- }else if (songTime < inst.SpawnTime + 1.1){
+			-- inst.canHurt = true;
+			-- inst.image_yscale = 15 + 435*(songTime - inst.SpawnTime - 1)/0.1;
+			-- inst.y = inst.image_yscale;
+		-- }else if (songTime < inst.SpawnTime + 1.9){
+			-- inst.canHurt = true;
+			-- inst.image_yscale = 450;
+			-- inst.y = 450;
+		-- }else{
+			-- inst.canHurt = true;
+			-- inst.image_yscale = 450*(0.1 - (songTime - inst.SpawnTime - 1.9))/0.1;
+			-- inst.y = inst.image_yscale;
+		-- }
+	-- };
+	yowl ( 0,2.02 + 0.52*(phases[0]%2) + 1.38*floor(phases[0]/2),"pixel2x2.png",irandom_range(60,1540),0,-1,30,0,meowprr ( 255,32,112 ),1,false,barInit,barUpdate,DrawFunc );
+} );
+UpdateEvent ( fun (songPlaying) {
+	-- songTime = getSongtime();
+	-- if (songPlaying == "Expand03 by Sledge"){
+		-- if (songTime > -0.48 + 0.52*(phases[0]%2) + 1.38*floor(phases[0]/2) and phases[0] <= 23){
+			-- yowl ( -0.48 + 0.52*(phases[0]%2) + 1.38*floor(phases[0]/2),2.02 + 0.52*(phases[0]%2) + 1.38*floor(phases[0]/2),"pixel2x2.png",irandom_range(60,1540),0,-1,30,0,meowprr ( 255,32,112 ),1,false,barInit,barUpdate,DrawFunc );
+			-- phases[0] += 1;
+		-- }
+		-- if (songTime > 0 and phases[1] == 0){
+			-- --spawn the 2 thingies
+			-- phases[1] += 1;
+		-- }
+	-- }else{ --Expand05 by Sledge
+		
+	-- }
+} );
+--DrawEvent ( fun { --This is optional
+	--Nothing
+--} );
+RewindEvent ( fun (player) { --This is optional
+	--Nothing
+} );
