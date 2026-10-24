@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"DotobjAliasImagePathToSprite",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"DotobjAliasImagePathToSprite",
+  "parent":{
+    "name":"Aliasing",
+    "path":"folders/dotobj/Aliasing.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

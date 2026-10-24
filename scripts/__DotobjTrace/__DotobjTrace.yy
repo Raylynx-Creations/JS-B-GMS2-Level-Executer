@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"__DotobjTrace",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"__DotobjTrace",
+  "parent":{
+    "name":"(System)",
+    "path":"folders/dotobj/(System).yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

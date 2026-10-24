@@ -1,4 +1,4 @@
-shader_reset();
+/*shader_reset();
 //shader_set(shd_blur);
 //shader_set_uniform_f(shader_get_uniform(shd_blur, "texel"), 1/surface_get_width(application_surface), 1/surface_get_height(application_surface));
 window_center(); //Remove when finished

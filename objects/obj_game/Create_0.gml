@@ -1,6 +1,6 @@
 LoadLevels();
 //LoadPlayerIcons();
-selected = 0;
+selected = 2;
 PlayerData = LoadPlayerConfig();
 MaxHP = Levels[selected].hp;
 Mode = (Levels[selected].play_as == "Shape") ? mode.shape : mode.helicopter;
@@ -31,7 +31,10 @@ camera = {x: 0, y: 0};
 mouse = {x: mouse_x, y: mouse_y};
 Created = true; //true
 Squares = [];
+world_3d = new ColWorldGameMaker();
+objects_3d = [];
 highestrank = 0;
+camera_view = view_camera[0];
 state = menu.waiting;
 timer = 0;
 timer2 = 0;
@@ -83,22 +86,10 @@ ShowSongTitle = function(title, artist, from, type){
 		var itemm = currentSong.artist;
 		itemm[1] = getSprite(itemm[1]);
 	}
-	array_copy(currentSong.from,0,from,0,array_length(from));
-	if (from[1] != ""){
+	currentSong.from = variable_clone(from);
+	if (!is_undefined(from) and from[1] != ""){
 		var itemm = currentSong.from;
 		itemm[1] = getSprite(itemm[1]);
-	}
-}
-DrawPlayers = function(player_array){
-	var sample = player_array[0];
-	var layer_amount = array_length(sample.layers);
-	var player_amount = array_length(player_array);
-	for (var i = 0; i < layer_amount; i++){
-		var j = 0;
-		for (var j = 0; j < player_amount; j++){
-			var player = player_array[j];
-			player.layers[i]();
-		}
 	}
 }
 UpdateBars = function(tempSeg){

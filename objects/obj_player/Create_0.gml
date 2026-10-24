@@ -23,11 +23,16 @@ Init = -1;
 Revive = -1;
 forcedHit = false;
 enabled = true;
+shape = undefined;
+object = undefined;
 isMoving = function(){
 	return (x != prevX or y != prevY);
 }
 if (modo == mode.shape){
 	#region Shape mode
+	shape = new ColAABB(new Vector3(x, y, depth), new Vector3(25*image_xscale, 25*image_yscale, 25*max(image_xscale, image_yscale)))
+	object = new ColObject(shape, self);
+	obj_game.world_3d.Add(object);
 	vel = {current: 7, normal: 7, dash: 22.5};
 	limits = {left: 16, right: 1584, up: 16, down: 884};
 	moving = false;

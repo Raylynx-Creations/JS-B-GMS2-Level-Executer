@@ -1,27 +1,35 @@
 randomize();
 catspeak_force_init();
-application_surface_draw_enable(false);
+//application_surface_draw_enable(false);
 os_powersave_enable(false);
+gpu_set_ztestenable(true);
 gpu_set_texfilter(true);
 gpu_set_blendmode_ext(bm_one, bm_inv_src_alpha);
 display_set_gui_size(1600, 900);
 shader_set(shd_preMulAlp);
 shader_set_uniform_f_array(shader_get_uniform(shd_preMulAlp, "u_Color"), [1,1,1,0]);
-globalvar SongTime, Volume, Resolutions, Photosensitive, Levels, Sprites, Sounds, Music, Mode, MaxHP, Scroll, Camera, Players, PlayerInstances, Dead_Players, Player_icons;
+
+draw_light_define_direction(1, .25, -1, .5, c_dkgray);
+draw_light_define_direction(2, -.25, 1, -.5, c_black);
+draw_light_enable(1, true);
+draw_light_enable(2, true);
+
+globalvar SongTime, Models, Volume, Resolutions, Photosensitive, Levels, Sprites, Sounds, Music, Mode, MaxHP, Scroll, Camera, Players, PlayerInstances, Dead_Players, Player_icons;
 Volume = {music: 1, sounds: 1};
 Resolutions = [{x: 800, y: 450}, {x: 852, y: 480}, {x: 1200, y: 675}, {x: 1280, y: 720}, {x: 1366, y: 768}, {x: 1600, y: 900}];
 Photosensitive = false;
 Mode = mode.helicopter;
 Dead_Players = false;
 MaxHP = 1;
-Scroll = {x: 0, y: 0, offset: {x: 0, y: 0}};
-Players = 3; //0
+Scroll = {x: 0, y: 0, range: 0, time: 0, offset: 0, angle: 0, angle_time: 0, angle_speed: 0};
+Players = 1; //0
 PlayerInstances = [];
 SongTime = 0;
 Player_icons = [];
 Levels = [];
 Camera = {x: 0, y: 0};
 Sprites = {};
+Models = {};
 Sounds = {};
 Music = {};
 #region Constants
@@ -131,7 +139,7 @@ enum goalType{
 #region Save and Load functions
 function LoadSprites(path){
 	if (directory_exists("Levels/" + path + "/Sprites")){
-		dir = "";
+		var dir = "";
 		var specil_sprites = [];
 		var found = file_exists("Levels/" + path + "/Sprites/sprites.json");
 		if (found){
@@ -208,6 +216,32 @@ function LoadSprites(path){
 		}
 		file_find_close();
 	}
+}
+function Load3DModels(path){
+	if (directory_exists("Levels/" + path + "/Models")){
+		var dir = file_find_first("Levels/" + path + "/Models/*.obj", 0);
+		while (dir != ""){
+			Models[$ dir] = DotobjModelLoadFromFileAsync("Levels/" + path + "/Models/" + dir);
+			dir = file_find_next();
+		}
+		file_find_close();
+	}
+}
+function areModelsLoaded(){
+	var names = struct_get_names(Models)
+	var length = array_length(names)
+	if (names == 0){
+		return true	
+	}
+	for (var i = 0; i < length; i++){
+		if (!Models[$ names[i]].loaded){
+			return false
+		}
+	}
+	for (var i = 0; i < length; i++){
+		Models[$ names[i]].Freeze();
+	}
+	return true
 }
 function LoadMusic(path){
 	var dir = file_find_first("Levels/" + path + "/Music/*.ogg", 0);
@@ -4020,6 +4054,20 @@ function getSprite(spr){
 	}
 	return spr_copy;
 }
+function getModel(mdl){
+	var mdl_copy = -1;
+	switch (mdl){
+		default:
+			mdl = Models[$ mdl];
+			if (is_struct(mdl)){
+				mdl_copy = variable_clone(mdl);
+			}else{
+				mdl_copy = undefined;
+			}
+		break;
+	}
+	return mdl_copy;
+}
 function setLevel(a){
 	if (obj_game.state == level.ready or obj_game.state == level.waiting){
 		var length = array_length(a);
@@ -4542,8 +4590,8 @@ function setLevel(a){
 				itemm[1].timer = 0;
 			}
 		}
-		array_copy(obj_game.currentSong.recreatedby,0,item.recreated_by,0,array_length(item.recreated_by));
-		if (item.recreated_by[1] != ""){
+		obj_game.currentSong.recreatedby = variable_clone(item.recreated_by);
+		if (!is_undefined(item.recreated_by) and item.recreated_by[1] != ""){
 			var itemm = obj_game.currentSong.recreatedby;
 			itemm[1] = getSprite(itemm[1]);
 		}
@@ -4552,8 +4600,8 @@ function setLevel(a){
 			var itemm = obj_game.currentSong.artist;
 			itemm[1] = getSprite(itemm[1]);
 		}
-		array_copy(obj_game.currentSong.from,0,item.from[index],0,array_length(item.from[index]));
-		if (item.from[index][1] != ""){
+		obj_game.currentSong.from = variable_clone(item.from);
+		if (!is_undefined(item.from) and item.from[index][1] != ""){
 			var itemm = obj_game.currentSong.from;
 			itemm[1] = getSprite(itemm[1]);
 		}
@@ -4562,15 +4610,21 @@ function setLevel(a){
 function killBullet(a){
 	a.DeathTime = min(SongTime, a.DeathTime);
 }
-function createbullet(born,death,spr,xx,yy,deep,scalex,scaley,color,alpha,hurt,init,upd,drw,dsh=false,hit=function(a,b){a.GetHit(b,1)}){
+function createbullet(born,death,spr,xx,yy,deep,scalex,scaley,color,alpha,hurt,init,upd,drw,dsh=false,hit=function(a,b){a.GetHit(b,1)},clean=-1){
 	spr = getSprite(spr);
-	var bullet = instance_create_depth(xx,yy,deep,obj_bullet,{SpawnTime: born, DeathTime: death, ignoreDash: dsh, Init: init, Update: upd, Draw: drw, canHit: hit, canHurt: hurt, spriteiomdsfilasmdanls: spr, sprite_index: spr.sprite, image_xscale: scalex, image_yscale: scaley, image_blend: color, image_alpha: alpha});
+	var bullet = instance_create_depth(xx,yy,deep,obj_bullet,{SpawnTime: born, DeathTime: death, ignoreDash: dsh, Init: init, Update: upd, Draw: drw, CleanUp: clean, canHit: hit, canHurt: hurt, spriteiomdsfilasmdanls: spr, sprite_index: spr.sprite, image_xscale: scalex, image_yscale: scaley, image_blend: color, image_alpha: alpha});
 	array_push(obj_game.Bullets.Alive, bullet);
 	return bullet;
 }
-function createbackground(born,death,spr,xx,yy,deep,scalex,scaley,color,alpha,init,upd,drw){
+function createbackground(born,death,spr,xx,yy,deep,scalex,scaley,color,alpha,init,upd,drw,clean=-1){
 	spr = getSprite(spr);
-	var bullet = instance_create_depth(xx,yy,deep,obj_background,{SpawnTime: born, DeathTime: death, Init: init, Update: upd, Draw: drw, spriteiomdsfilasmdanls: spr, sprite_index: spr.sprite, image_xscale: scalex, image_yscale: scaley, image_blend: color, image_alpha: alpha});
+	var bullet = instance_create_depth(xx,yy,deep,obj_background,{SpawnTime: born, DeathTime: death, Init: init, Update: upd, Draw: drw, CleanUp: clean, spriteiomdsfilasmdanls: spr, ismodelnodshnsodhau: false, sprite_index: spr.sprite, image_xscale: scalex, image_yscale: scaley, image_blend: color, image_alpha: alpha});
+	array_push(obj_game.Background.Alive, bullet);
+	return bullet;
+}
+function createmodel(born,death,mdl,xx,yy,zz,_scalex,_scaley,_scalez,color,alpha,init,upd,drw,clean=-1){
+	mdl = getModel(mdl);
+	var bullet = instance_create_depth(xx,yy,0,obj_background,{z: zz, SpawnTime: born, DeathTime: death, Init: init, Update: upd, Draw: drw, CleanUp: clean, rx: 0, ry: 0, rz: 0, spriteiomdsfilasmdanls: mdl, ismodelnodshnsodhau: true, scalex: _scalex, scaley: _scaley, scalez: _scalez, image_blend: color, image_alpha: alpha});
 	array_push(obj_game.Background.Alive, bullet);
 	return bullet;
 }
@@ -4841,40 +4895,309 @@ function getLoops(){
 		return obj_game.segmentBar.order[obj_game.segmentBar.index.music].musicLoop[obj_game.segLooping].looped;
 	}
 }
+function beats_to_seconds(arg0)
+{
+    return arg0 / 2.1333333333333333;
+}
+
+function update_skeleton(arg0, arg1)
+{
+    if (arg0.skull_throw > -1)
+    {
+        var _time_skull = songTime - arg0.skull_throw;
+        var _color, _head_color;
+        
+        if (_time_skull <= beats_to_seconds(2.3))
+        {
+            _color = make_colour_rgb(255, 143.5 - (111.5 * dcos((360 * _time_skull) / 0.1)), 183.5 - (71.5 * dcos((360 * _time_skull) / 0.1)));
+            _head_color = _color;
+        }
+        else if (_time_skull <= beats_to_seconds(4) && arg0.skull_explode > -1)
+        {
+            _color = 7348479;
+            _head_color = make_colour_rgb(255, 143.5 - (111.5 * dcos((360 * _time_skull) / 0.1)), 183.5 - (71.5 * dcos((360 * _time_skull) / 0.1)));
+        }
+        else
+        {
+            _color = 7348479;
+            _head_color = 7348479;
+        }
+        
+        arg0.body.image_blend = _color;
+        arg0.right_arm_top.image_blend = _color;
+        arg0.right_arm_bottom.image_blend = _color;
+        arg0.right_hand.image_blend = _color;
+        arg0.left_arm_top.image_blend = _color;
+        arg0.left_arm_bottom.image_blend = _color;
+        arg0.left_hand.image_blend = _color;
+        arg0.right_leg_top.image_blend = _color;
+        arg0.right_leg_bottom.image_blend = _color;
+        arg0.left_leg_top.image_blend = _color;
+        arg0.left_leg_bottom.image_blend = _color;
+        arg0.head.image_blend = _head_color;
+        arg0.jaw.image_blend = _head_color;
+        
+        if (_time_skull < beats_to_seconds(1))
+        {
+            var _time_2 = ((arg0.skull_throw - arg0.SpawnTime) + arg0.offset) % beats_to_seconds(2);
+            var _mult_skull = min(_time_skull / beats_to_seconds(0.3), 1);
+            var _mult_2 = min(_time_2 / beats_to_seconds(0.3), 1) * (1 - _mult_skull);
+            arg0.right_arm_angles[0] = (-60 * _mult_2) + (150 * _mult_skull);
+            arg0.right_arm_angles[1] = (120 * _mult_2) - (230 * _mult_skull);
+            arg0.right_arm_angles[2] = (-60 * _mult_2) + (10 * _mult_skull);
+            arg0.head_data.jaw = 20 * _mult_2;
+        }
+        else if (_time_skull < beats_to_seconds(2))
+        {
+            var _mult_skull = min((_time_skull - beats_to_seconds(1)) / beats_to_seconds(0.3), 1);
+            arg0.right_arm_angles[0] = 150 - (90 * _mult_skull);
+            arg0.right_arm_angles[1] = 130;
+            arg0.right_arm_angles[2] = 10 - (30 * _mult_skull);
+            arg0.head_data.jaw = 0;
+        }
+        else if (_time_skull < beats_to_seconds(3))
+        {
+            var _mult_skull = min((_time_skull - beats_to_seconds(2)) / beats_to_seconds(0.3), 1);
+            arg0.right_arm_angles[0] = 70 + (100 * _mult_skull);
+            arg0.right_arm_angles[1] = 130 - (110 * _mult_skull);
+            arg0.right_arm_angles[2] = -20 + (10 * _mult_skull);
+            arg0.head_data.jaw = 20 * _mult_skull;
+        }
+        else if (_time_skull < beats_to_seconds(3.3))
+        {
+            var _time_2 = ((arg0.skull_throw - arg0.SpawnTime) + arg0.offset) % beats_to_seconds(2);
+            var _mult_skull = 1 - min((_time_skull - beats_to_seconds(3)) / beats_to_seconds(0.3), 1);
+            var _mult_2 = min(_time_2 / beats_to_seconds(0.3), 1) * (1 - _mult_skull);
+            arg0.right_arm_angles[0] = (-60 * _mult_2) + (170 * _mult_skull);
+            arg0.right_arm_angles[1] = (120 * _mult_2) - (340 * _mult_skull);
+            arg0.right_arm_angles[2] = (-60 * _mult_2) - (10 * _mult_skull);
+            arg0.head_data.jaw = 20;
+        }
+        else
+        {
+            arg0.right_arm_angles[0] = -arg0.left_arm_angles[0];
+            arg0.right_arm_angles[1] = -arg0.left_arm_angles[1];
+            arg0.right_arm_angles[2] = -arg0.left_arm_angles[2];
+            
+            if (_time_skull < beats_to_seconds(4))
+            {
+                var _mult_2 = min((4 - _time_skull) / 0.3, 1);
+                arg0.head_data.jaw = 20 * _mult_2;
+            }
+            else if (_time_skull < beats_to_seconds(5.8))
+            {
+                var _time_2 = ((arg0.skull_throw - arg0.SpawnTime) + arg0.offset) % beats_to_seconds(2);
+                var _mult_skull = clamp((_time_skull - beats_to_seconds(5.7)) / beats_to_seconds(0.1), 0, 1);
+                var _mult_2 = min(_time_2 / beats_to_seconds(0.3), 1) * _mult_skull;
+                arg0.head_data.jaw = 20 * _mult_2;
+            }
+            else
+            {
+                arg0.head_data.jaw = 20 * arg1;
+                arg0.skull_throw = -1;
+                arg0.skull_explode = -1;
+            }
+        }
+        
+        if (_time_skull < beats_to_seconds(2))
+        {
+            var _mult_skull = clamp((_time_skull - beats_to_seconds(1)) / beats_to_seconds(0.3), 0, 1);
+            var _distance = 419.761;
+            var _angle = 310.749345;
+            var _head_angle = (_angle + 180) - (90 * _mult_skull);
+            var _head_x = ((_distance * dcos(_angle)) + (_distance * dcos(_head_angle))) * arg0.image_xscale;
+            var _head_y = (arg0.body_height + 638 + (_distance * dsin(_angle)) + (_distance * dsin(_head_angle))) * arg0.image_xscale;
+            arg0.head_data.x = (arg0.x - (_head_y * dsin(arg0.image_angle))) + (_head_x * dcos(arg0.image_angle));
+            arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle)) - (_head_x * dsin(arg0.image_angle));
+            arg0.head_data.angle = arg0.image_angle - (120 * _mult_skull);
+        }
+        else if (_time_skull < beats_to_seconds(2.3))
+        {
+            var _mult_skull = min((_time_skull - beats_to_seconds(2)) / beats_to_seconds(0.3), 1);
+            var _distance = 419.761;
+            var _distance_head = _distance + (339.044 * _mult_skull);
+            var _angle = 310.749345;
+            var _head_angle = _angle + 90 + (50 * _mult_skull);
+            var _head_x = ((_distance * dcos(_angle)) + (_distance_head * dcos(_head_angle))) * arg0.image_xscale;
+            var _head_y = (arg0.body_height + 638 + (_distance * dsin(_angle)) + (_distance_head * dsin(_head_angle))) * arg0.image_xscale;
+            arg0.head_data.x = (arg0.x - (_head_y * dsin(arg0.image_angle))) + (_head_x * dcos(arg0.image_angle));
+            arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle)) - (_head_x * dsin(arg0.image_angle));
+            arg0.head_data.angle = (arg0.image_angle - 120) + (120 * _mult_skull);
+        }
+        else if (_time_skull < beats_to_seconds(4))
+        {
+            var _mult_skull = (_time_skull - beats_to_seconds(2.3)) / beats_to_seconds(1.7);
+            var _time_2 = ((arg0.skull_throw - arg0.SpawnTime) + arg0.offset) % beats_to_seconds(2);
+            var _mult_2 = 1 - (min(_time_2 / beats_to_seconds(0.3), 1) * clamp((beats_to_seconds(1.3) - _time_2) / beats_to_seconds(0.3), 0, 1));
+            var _distance = 419.761;
+            var _distance_head = 758.805;
+            var _angle = 310.749345;
+            var _head_angle = _angle + 140;
+            var _head_x = ((_distance * dcos(_angle)) + (_distance_head * dcos(_head_angle))) * arg0.image_xscale * (1 - (_mult_skull / 2));
+            var _head_y = ((2090 - (455 * _mult_2)) + (((2000 - (1000 * (arg0.skull_explode >= 0))) + (455 * _mult_2)) * dsin(90 * _mult_skull)) + (_distance * dsin(_angle)) + (_distance_head * dsin(_head_angle))) * arg0.image_xscale;
+            arg0.head_data.x = (arg0.x - (_head_y * dsin(arg0.image_angle))) + (_head_x * dcos(arg0.image_angle));
+            arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle)) - (_head_x * dsin(arg0.image_angle));
+            arg0.head_data.angle = arg0.image_angle + (180 * _mult_skull);
+        }
+        else if (_time_skull < beats_to_seconds(5.7))
+        {
+            var _mult_skull = (_time_skull - beats_to_seconds(4)) / beats_to_seconds(1.7);
+            var _time_2 = ((arg0.skull_throw - arg0.SpawnTime) + arg0.offset) % beats_to_seconds(2);
+            var _mult_2 = min(_time_2 / beats_to_seconds(0.3), 1) * clamp((beats_to_seconds(1.3) - _time_2) / beats_to_seconds(0.3), 0, 1);
+            var _distance = 419.761;
+            var _distance_head = 758.805;
+            var _angle = 310.749345;
+            var _head_angle = _angle + 140;
+            var _head_x = ((_distance * dcos(_angle)) + (_distance_head * dcos(_head_angle))) * arg0.image_xscale * (0.5 - (_mult_skull / 2));
+            var _head_y = ((2090 - (455 * _mult_2 * (1 - dcos(90 * _mult_skull)))) + (((2000 - (1000 * (arg0.skull_explode >= 0))) + (_distance * dsin(_angle)) + (_distance_head * dsin(_head_angle))) * dcos(90 * _mult_skull))) * arg0.image_xscale;
+            arg0.head_data.x = (arg0.x - (_head_y * dsin(arg0.image_angle))) + (_head_x * dcos(arg0.image_angle));
+            arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle)) - (_head_x * dsin(arg0.image_angle));
+            arg0.head_data.angle = arg0.image_angle + 180 + (180 * _mult_skull);
+        }
+        else
+        {
+            var _head_y = (arg0.body_height + 638) * arg0.image_xscale;
+            arg0.head_data.x = arg0.x - (_head_y * dsin(arg0.image_alpha));
+            arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle));
+            arg0.head_data.angle = arg0.image_angle;
+        }
+    }
+    else
+    {
+        arg0.right_arm_angles[0] = -arg0.left_arm_angles[0];
+        arg0.right_arm_angles[1] = -arg0.left_arm_angles[1];
+        arg0.right_arm_angles[2] = -arg0.left_arm_angles[2];
+        var _head_y = (arg0.body_height + 638) * arg0.image_xscale;
+        arg0.head_data.x = arg0.x - (_head_y * dsin(arg0.image_alpha));
+        arg0.head_data.y = arg0.y - (_head_y * dcos(arg0.image_angle));
+        arg0.head_data.angle = arg0.image_angle;
+        arg0.head_data.jaw = 20 * arg1;
+    }
+    
+    arg0.left_leg_bottom.image_angle = arg0.image_angle + arg0.leg_angles[0];
+    arg0.right_leg_bottom.image_angle = arg0.image_angle - arg0.leg_angles[0];
+    arg0.left_leg_top.image_angle = arg0.left_leg_bottom.image_angle + arg0.leg_angles[1];
+    arg0.right_leg_top.image_angle = arg0.right_leg_bottom.image_angle - arg0.leg_angles[1];
+    arg0.left_arm_top.image_angle = arg0.image_angle + arg0.left_arm_angles[0];
+    arg0.right_arm_top.image_angle = arg0.image_angle + arg0.right_arm_angles[0];
+    arg0.left_arm_bottom.image_angle = arg0.left_arm_top.image_angle + arg0.left_arm_angles[1];
+    arg0.right_arm_bottom.image_angle = arg0.right_arm_top.image_angle + arg0.right_arm_angles[1];
+    arg0.left_hand.image_angle = arg0.left_arm_bottom.image_angle + arg0.left_arm_angles[2];
+    arg0.right_hand.image_angle = arg0.right_arm_bottom.image_angle + arg0.right_arm_angles[2];
+    arg0.body.image_angle = arg0.image_angle;
+    arg0.head.image_angle = arg0.head_data.angle;
+    arg0.jaw.image_angle = arg0.head_data.angle;
+    var _body_y = arg0.body_height * arg0.image_xscale;
+    arg0.body.x = arg0.x - (_body_y * dsin(arg0.image_angle));
+    arg0.body.y = arg0.y - (_body_y * dcos(arg0.image_angle));
+    var _leg_bottom_x = 497 * dsin(arg0.left_leg_bottom.image_angle) * arg0.image_xscale;
+    var _leg_bottom_y = 497 * dcos(arg0.left_leg_bottom.image_angle) * arg0.image_xscale;
+    var _leg_top_x = 497 * dsin(arg0.left_leg_top.image_angle) * arg0.image_xscale;
+    var _leg_top_y = 497 * dcos(arg0.left_leg_top.image_angle) * arg0.image_xscale;
+    var _leg_x_offset = 190 * dcos(arg0.image_angle) * arg0.image_xscale;
+    var _leg_y_offset = -190 * dsin(arg0.image_angle) * arg0.image_xscale;
+    arg0.left_leg_bottom.x = arg0.x - _leg_x_offset - (_leg_bottom_x / 2);
+    arg0.left_leg_bottom.y = arg0.y - _leg_y_offset - (_leg_bottom_y / 2);
+    arg0.right_leg_bottom.x = arg0.x + _leg_x_offset + (_leg_bottom_x / 2);
+    arg0.right_leg_bottom.y = (arg0.y + _leg_y_offset) - (_leg_bottom_y / 2);
+    arg0.left_leg_top.x = arg0.left_leg_bottom.x - (_leg_bottom_x / 2) - (_leg_top_x / 2);
+    arg0.left_leg_top.y = arg0.left_leg_bottom.y - (_leg_bottom_y / 2) - (_leg_top_y / 2);
+    arg0.right_leg_top.x = arg0.right_leg_bottom.x + (_leg_bottom_x / 2) + (_leg_top_x / 2);
+    arg0.right_leg_top.y = arg0.right_leg_bottom.y - (_leg_bottom_y / 2) - (_leg_top_y / 2);
+    var _left_arm_top_x = 442 * dsin(arg0.left_arm_top.image_angle) * arg0.image_xscale;
+    var _left_arm_top_y = 442 * dcos(arg0.left_arm_top.image_angle) * arg0.image_xscale;
+    var _left_arm_bottom_x = 323 * dsin(arg0.left_arm_bottom.image_angle) * arg0.image_xscale;
+    var _left_arm_bottom_y = 323 * dcos(arg0.left_arm_bottom.image_angle) * arg0.image_xscale;
+    var _left_hand_x = ((40 * dcos(arg0.left_hand.image_angle)) + (157 * dsin(arg0.left_hand.image_angle))) * arg0.image_xscale;
+    var _left_hand_y = ((157 * dcos(arg0.left_hand.image_angle)) - (40 * dsin(arg0.left_hand.image_angle))) * arg0.image_xscale;
+    var _right_arm_top_x = 442 * dsin(arg0.right_arm_top.image_angle) * arg0.image_xscale;
+    var _right_arm_top_y = 442 * dcos(arg0.right_arm_top.image_angle) * arg0.image_xscale;
+    var _right_arm_bottom_x = 323 * dsin(arg0.right_arm_bottom.image_angle) * arg0.image_xscale;
+    var _right_arm_bottom_y = 323 * dcos(arg0.right_arm_bottom.image_angle) * arg0.image_xscale;
+    var _right_hand_x = ((-40 * dcos(arg0.right_hand.image_angle)) + (157 * dsin(arg0.right_hand.image_angle))) * arg0.image_xscale;
+    var _right_hand_y = ((157 * dcos(arg0.right_hand.image_angle)) - (40 * dsin(arg0.right_hand.image_angle))) * arg0.image_xscale;
+    var _arm_x_offset = ((274 * dcos(arg0.image_angle)) + (320 * dsin(arg0.image_angle))) * arg0.image_xscale;
+    var _arm_y_offset = ((320 * dcos(arg0.image_angle)) - (274 * dsin(arg0.image_angle))) * arg0.image_xscale;
+    arg0.left_arm_top.x = (arg0.body.x - _arm_x_offset) + (_left_arm_top_x / 2);
+    arg0.left_arm_top.y = (arg0.body.y - _arm_y_offset) + (_left_arm_top_y / 2);
+    arg0.left_arm_bottom.x = arg0.left_arm_top.x + (_left_arm_top_x / 2) + (_left_arm_bottom_x / 2);
+    arg0.left_arm_bottom.y = arg0.left_arm_top.y + (_left_arm_top_y / 2) + (_left_arm_bottom_y / 2);
+    arg0.left_hand.x = arg0.left_arm_bottom.x + (_left_arm_bottom_x / 2) + (_left_hand_x / 2);
+    arg0.left_hand.y = arg0.left_arm_bottom.y + (_left_arm_bottom_y / 2) + (_left_hand_y / 2);
+    arg0.right_arm_top.x = arg0.body.x + _arm_x_offset + (_right_arm_top_x / 2);
+    arg0.right_arm_top.y = (arg0.body.y - _arm_y_offset) + (_right_arm_top_y / 2);
+    arg0.right_arm_bottom.x = arg0.right_arm_top.x + (_right_arm_top_x / 2) + (_right_arm_bottom_x / 2);
+    arg0.right_arm_bottom.y = arg0.right_arm_top.y + (_right_arm_top_y / 2) + (_right_arm_bottom_y / 2);
+    arg0.right_hand.x = arg0.right_arm_bottom.x + (_right_arm_bottom_x / 2) + (_right_hand_x / 2);
+    arg0.right_hand.y = arg0.right_arm_bottom.y + (_right_arm_bottom_y / 2) + (_right_hand_y / 2);
+    arg0.head.x = arg0.head_data.x - (20 * dsin(arg0.head_data.angle) * arg0.image_xscale);
+    arg0.head.y = arg0.head_data.y - (20 * dcos(arg0.head_data.angle) * arg0.image_xscale);
+    arg0.jaw.x = arg0.head_data.x + ((145 + arg0.head_data.jaw) * dsin(arg0.head_data.angle) * arg0.image_xscale);
+    arg0.jaw.y = arg0.head_data.y + ((145 + arg0.head_data.jaw) * dcos(arg0.head_data.angle) * arg0.image_xscale);
+}
+function set_level_scroll(arg0, arg1)
+{
+    Scroll.x = arg0;
+    Scroll.y = arg1;
+}
+function set_level_wobble(_time, _distance, _strength){
+	Scroll.time = _time;
+	Scroll.range = _distance;
+	Scroll.offset = _strength;
+}
+function set_level_tilt(_time, _angle, _speed){
+	Scroll.angle = _angle
+	Scroll.angle_time = _time
+	Scroll.angle_speed = _speed
+}
+function set_level_position(_x, _y){
+	Camera.x = _x;
+	Camera.y = _y;
+}
+function get_level_position(){
+	return Camera;
+}
+function get_level_scroll(){
+	return Scroll
+}
 #endregion
 #region Adding function to Catspeak
 Catspeak.applyPreset(CatspeakPreset.ARRAY);
 Catspeak.applyPreset(CatspeakPreset.MATH);
 Catspeak.applyPreset(CatspeakPreset.RANDOM);
-Catspeak.interface.exposeConstant("Players",PlayerInstances);
-Catspeak.interface.exposeConstant("spr_pixel",spr_pixel);
-Catspeak.interface.exposeFunction("getSongtime",getSongtime);
-Catspeak.interface.exposeFunction("getLoops",getLoops);
-Catspeak.interface.exposeFunction("string",string);
-Catspeak.interface.exposeFunction("yowl", createbullet);
-Catspeak.interface.exposeFunction("createBG", createbackground);
-Catspeak.interface.exposeFunction("maowa", dsin);
-Catspeak.interface.exposeFunction("waowa", sin);
-Catspeak.interface.exposeFunction("maoma", dcos);
-Catspeak.interface.exposeFunction("waoma", cos);
-Catspeak.interface.exposeFunction("wrrmeow", draw_sprite_ext);
-Catspeak.interface.exposeFunction("InitEvent", declareInit);
-Catspeak.interface.exposeFunction("UpdateEvent", declareUpdate);
-Catspeak.interface.exposeFunction("DrawEvent", declareDraw);
-Catspeak.interface.exposeFunction("RewindEvent", declareRewind);
-Catspeak.interface.exposeFunction("wrrmow", draw_clear_alpha);
-Catspeak.interface.exposeFunction("meowpff", make_color_hsv);
-Catspeak.interface.exposeFunction("meowprr", make_color_rgb);
-Catspeak.interface.exposeFunction("hisspff", killBullet);
-Catspeak.interface.exposeFunction("max", maximum);
-Catspeak.interface.exposeFunction("abs", abs);
-Catspeak.interface.exposeFunction("getPlayers", getPlayers);
-Catspeak.interface.exposeFunction("getSprite", getSprite);
-Catspeak.interface.exposeFunction("irandom", irandom);
-Catspeak.interface.exposeFunction("pointDistance", point_distance);
-Catspeak.interface.exposeFunction("pointDirection", point_direction);
-Catspeak.interface.exposeFunction("playSound", playSound);
-Catspeak.interface.exposeFunction("volumeSound", volumeSound);
-Catspeak.interface.exposeFunction("setLevel", setLevel);
+Catspeak.interface.exposeFunction("beats_to_seconds", beats_to_seconds);
+Catspeak.interface.exposeFunction("update_skeleton", update_skeleton);
+Catspeak.interface.exposeConstant("Players", PlayerInstances);
+Catspeak.interface.exposeConstant("spr_pixel", spr_pixel);
+Catspeak.interface.exposeConstant("c_pink", c_pink);
+Catspeak.interface.exposeFunction("get_songtime", getSongtime);
+Catspeak.interface.exposeFunction("get_loops", getLoops);
+Catspeak.interface.exposeFunction("string", string);
+Catspeak.interface.exposeFunction("create_bullet", createbullet);
+Catspeak.interface.exposeFunction("create_background", createbackground);
+Catspeak.interface.exposeFunction("create_model", createmodel);
+Catspeak.interface.exposeFunction("draw_sprite_ext", draw_sprite_ext);
+Catspeak.interface.exposeFunction("init_event", declareInit);
+Catspeak.interface.exposeFunction("update_event", declareUpdate);
+Catspeak.interface.exposeFunction("draw_event", declareDraw);
+Catspeak.interface.exposeFunction("rewind_event", declareRewind);
+Catspeak.interface.exposeFunction("draw_clear_alpha", draw_clear_alpha);
+Catspeak.interface.exposeFunction("make_color_hsv", make_color_hsv);
+Catspeak.interface.exposeFunction("make_color_rgb", make_color_rgb);
+Catspeak.interface.exposeFunction("kill_bullet", killBullet);
+Catspeak.interface.exposeFunction("get_players", getPlayers);
+Catspeak.interface.exposeFunction("get_sprite", getSprite);
+Catspeak.interface.exposeFunction("get_model", getModel);
+Catspeak.interface.exposeFunction("play_sound", playSound);
+Catspeak.interface.exposeFunction("volume_sound", volumeSound);
+Catspeak.interface.exposeFunction("set_level", setLevel);
 Catspeak.interface.exposeFunction("show_message", show_message);
+Catspeak.interface.exposeFunction("show_debug_message", show_debug_message);
+Catspeak.interface.exposeFunction("set_level_scroll", set_level_scroll);
+Catspeak.interface.exposeFunction("get_level_scroll", get_level_scroll);
+Catspeak.interface.exposeFunction("set_level_wobble", set_level_wobble);
+Catspeak.interface.exposeFunction("set_level_tilt", set_level_tilt);
+Catspeak.interface.exposeFunction("set_level_position", set_level_position);
+Catspeak.interface.exposeFunction("get_level_position", get_level_position);
+Catspeak.interface.exposeFunction("create_obb_collision", ColOBBObject);
 #endregion

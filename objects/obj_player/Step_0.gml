@@ -223,6 +223,7 @@ if (enabled){
 				timer.idle = max(timer.idle - step, 0);
 			}
 		}
+		shape.Set(new Vector3(x, y, depth), new Vector3(25*image_xscale, 25*image_yscale, 25*max(image_xscale, image_yscale)))
 	}else{ if (modo == mode.helicopter){
 		if (murio){
 			if (damaged == 0){
@@ -530,7 +531,7 @@ if (enabled){
 				head.x = 0.75 - 0.1125/30*(30 - bounce.timer)*dsin(720/30*bounce.timer + 180*bounce.value);
 				head.y = 0.75 + 0.1125/30*(30 - bounce.timer)*dsin(720/30*bounce.timer + 180*bounce.value);
 			}
-			if (hurtanim.enable and !stopscroll){
+			if (!hurtanim.enable or stopscroll){
 				x += Scroll.x*step;
 				py += Scroll.y*step;
 			}
@@ -590,5 +591,11 @@ if (!murio){
 		case mode.helicopter:
 			py = clamp(py, limits.up + Camera.y, limits.down + Camera.y);
 		break;
+	}
+	obj_game.world_3d.Remove(object);
+	obj_game.world_3d.Add(object);
+	var _object_colliding = obj_game.world_3d.CheckObject(object)
+	if (!is_undefined(_object_colliding) and ((modo == mode.shape and (timer.dash <= 1 or vel.current - vel.normal == 0)) or modo == mode.helicopter) and damaged == -1){
+		GetHit(_object_colliding.shape.position, 1);
 	}
 }

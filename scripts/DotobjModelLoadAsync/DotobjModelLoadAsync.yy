@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"DotobjModelLoadAsync",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"DotobjModelLoadAsync",
+  "parent":{
+    "name":"Loaders",
+    "path":"folders/dotobj/Loaders.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

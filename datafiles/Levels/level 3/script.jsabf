@@ -1,0 +1,847 @@
+init_event( fun{
+	phases = [136,52,2]
+	set_level([{musicIndex: 0, start: beats_to_seconds(160), finish: beats_to_seconds(200)}]);
+	pool = [];
+	c_purple = make_color_rgb(178,0,255);
+	bone_wall_init = fun(_inst){
+		_inst.warning_top = create_background(_inst.SpawnTime,_inst.SpawnTime + 2,"bone top.png",_inst.x,-200,-1,_inst.image_xscale,_inst.image_xscale,c_pink,0,-1,-1,-1);
+		_inst.warning_middle = create_background(_inst.SpawnTime,_inst.SpawnTime + 2,"pixel2x2.png",_inst.x,-200,-1,125*_inst.image_xscale,0,c_pink,0,-1,-1,-1);
+		_inst.middle = create_bullet(_inst.SpawnTime,_inst.SpawnTime + 4,"pixel2x2.png",_inst.x,-200,0,125*_inst.image_xscale,0,c_pink,1,true,-1,-1,-1);
+	};
+	bone_wall_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		if (_time < 2){
+			let _height = _inst.length + 20*sign(_inst.length);
+			_inst.warning_top.image_alpha = (0.3 + 0.1*sin(3*songTime))*(songTime - _inst.SpawnTime)/2;
+			_inst.warning_middle.image_alpha = _inst.warning_top.image_alpha;
+			_inst.warning_middle.image_yscale = _height/2;
+			_inst.warning_top.y = _inst.floor_y + _height;
+			_inst.warning_middle.y = _inst.floor_y + _height/2;
+		}
+		if (_time < 1.8){
+			_inst.y = _inst.floor_y;
+			_inst.middle.image_yscale = 0;
+			_inst.middle.y = _inst.floor_y;
+		}else if (_time < 2){
+			let _height = (_inst.length + 20*sign(_inst.length))*dsin(90*(_time - 1.8)/0.2);
+			_inst.y = _inst.floor_y + _height;
+			_inst.middle.image_yscale = _height/2;
+			_inst.middle.y = _inst.floor_y + _height/2;
+		}else{
+			let _height = _inst.length + 20*sign(_inst.length)*dcos(90*min(_time - 2, 0.1)/0.1);
+			_inst.y = _inst.floor_y + _height;
+			_inst.middle.image_yscale = _height/2;
+			_inst.middle.y = _inst.floor_y + _height/2;
+			_inst.speed = max(60*(_time - 2.3), 0);
+			_inst.middle.speed = _inst.speed;
+			_inst.middle.direction = _inst.direction;
+		}
+	};
+	bone_init = fun(_inst){
+		_inst.spin_magnitude = irandom_range(1,4)*choose(1,-1);
+		_inst.spin_direciton = choose(1,-1);
+		_inst.direction = 180 + irandom_range(-30,30);
+		_inst.speed = irandom_range(6,10);
+		_inst.spawn_sprite = create_background(_inst.SpawnTime,_inst.SpawnTime + 0.2,"circle.png",_inst.x,_inst.y,1,0,0,#FFFFFF,1,-1,-1,-1);
+		_inst.spawn_sprite.speed = _inst.speed;
+		_inst.spawn_sprite.direction = _inst.direction;
+	};
+	bone_explode_init = fun(_inst){
+		_inst.spawn_sprite = create_background(_inst.SpawnTime,_inst.SpawnTime + 0.2,"circle.png",_inst.x,_inst.y,1,0,0,#FFFFFF,1,-1,-1,-1);
+	};
+	bone_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		if (_time < 0.2){
+			_inst.spawn_sprite.image_xscale = _inst.image_xscale*dsin(90*_time/0.1);
+			_inst.spawn_sprite.image_yscale = _inst.spawn_sprite.image_xscale;
+			_inst.spawn_sprite.speed = _inst.speed;
+			_inst.spawn_sprite.direction = _inst.direction;
+			_inst.image_alpha = (_time >= 0.1);
+		}else{
+			_inst.image_alpha = 1;
+		}
+		_inst.image_angle += _inst.spin_magnitude*_inst.spin_direciton;
+	};
+	laser_init = fun(_inst){
+		_inst.warning = create_background(_inst.SpawnTime,_inst.SpawnTime + 2,"pixel2x2.png",-200,-200,-1,0,0,c_pink,0,-1,-1,-1);
+	}
+	laser_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		if (_time < 2){
+			if (_inst.orientation%2 == 0){
+				_inst.warning.x = 800;
+				_inst.warning.y = _inst.y;
+				_inst.warning.image_xscale = 900;
+				_inst.warning.image_yscale = _inst.width*_time/4;
+			}else{
+				_inst.warning.x = _inst.x;
+				_inst.warning.y = 450;
+				_inst.warning.image_xscale = _inst.width*_time/4;
+				_inst.warning.image_yscale = 550;
+			}
+			_inst.warning.image_alpha = (0.3 + 0.1*sin(3*songTime))*(songTime - _inst.SpawnTime)/2;
+		}
+		if (_time >= 1.8){
+			if (_time < 2){
+				let _factor = dsin(90*(_time - 1.8)/0.2);
+				if (_inst.orientation%2 == 0){
+					let _x_side = -100 + 1800*_inst.orientation/2;
+					let _x_destination = 800 - _x_side;
+					_inst.x = _x_side + _x_destination*_factor;
+					_inst.image_xscale = 900*_factor;
+					_inst.image_yscale = _inst.width*_factor/2;
+				}else{
+					let _y_side = -100 + 1000*(_inst.orientation - 1)/2;
+					let _y_destination = 450 - _y_side;
+					_inst.y = _y_side + _y_destination*_factor;
+					_inst.image_yscale = 550*_factor;
+					_inst.image_xscale = _inst.width*_factor/2;
+				}
+				_inst.image_color = make_color_rgb(255,255 - 223*_factor,255 - 143*_factor);
+			}else if (_time < 2 + _inst.duration){
+				if (_inst.orientation%2 == 0){
+					_inst.x = 800;
+					_inst.image_xscale = 900;
+					_inst.image_yscale = _inst.width/2;
+				}else{
+					_inst.y = 450;
+					_inst.image_yscale = 550;
+					_inst.image_xscale = _inst.width/2;
+				}
+				_inst.image_color = c_pink;
+			}else{
+				let _factor = _inst.width*dcos(90*(_time - 2 - _inst.duration)/0.2)/2;
+				if (_inst.orientation%2 == 0){
+					_inst.x = 800;
+					_inst.image_xscale = 900;
+					_inst.image_yscale = _factor;
+				}else{
+					_inst.y = 450;
+					_inst.image_yscale = 550;
+					_inst.image_xscale = _factor;
+				}
+				_inst.image_color = c_pink;
+			}
+		}
+	}
+	skeleton_init = fun(_inst){
+		_inst.head_data = {x: 0, y:0, angle: 0, jaw: 0};
+		_inst.body_height = 1452;
+		_inst.left_arm_angles = [0,0,0];
+		_inst.right_arm_angles = [0,0,0];
+		_inst.leg_angles = [0,0];
+		_inst.offset = 0;
+		_inst.skull_throw = -1;
+		_inst.skull_explode = -1;
+		_inst.body = create_bullet(_inst.SpawnTime, _inst.DeathTime, "body.png", -200, -200, 1, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.left_arm_top = create_bullet(_inst.SpawnTime, _inst.DeathTime, "arm top.png", -200, -200, 0, -_inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.left_arm_bottom = create_bullet(_inst.SpawnTime, _inst.DeathTime, "arm bottom.png", -200, -200, 0, -_inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.left_hand = create_bullet(_inst.SpawnTime, _inst.DeathTime, "hand.png", -200, -200, 0, -_inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.right_arm_top = create_bullet(_inst.SpawnTime, _inst.DeathTime, "arm top.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.right_arm_bottom = create_bullet(_inst.SpawnTime, _inst.DeathTime, "arm bottom.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.right_hand = create_bullet(_inst.SpawnTime, _inst.DeathTime, "hand.png", -200, -200, 1, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.left_leg_top = create_bullet(_inst.SpawnTime, _inst.DeathTime, "leg top.png", -200, -200, 0, -_inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.left_leg_bottom = create_bullet(_inst.SpawnTime, _inst.DeathTime, "leg bottom.png", -200, -200, 0, -_inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.right_leg_top = create_bullet(_inst.SpawnTime, _inst.DeathTime, "leg top.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.right_leg_bottom = create_bullet(_inst.SpawnTime, _inst.DeathTime, "leg bottom.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.head = create_bullet(_inst.SpawnTime, _inst.DeathTime, "head.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+		_inst.jaw = create_bullet(_inst.SpawnTime, _inst.DeathTime, "jaw.png", -200, -200, 0, _inst.image_xscale, _inst.image_xscale, c_pink, 1, true, -1, -1, -1);
+	}
+	skeleton_update = fun(_inst){
+		let _time = (songTime - _inst.SpawnTime + _inst.offset)%beats_to_seconds(2);
+		let _mult = min(_time/beats_to_seconds(0.3), 1)*clamp((beats_to_seconds(1.3) - _time)/beats_to_seconds(0.3),0,1);
+		
+		_inst.body_height = 1452 - 910*(1 - dcos(60*_mult));
+		_inst.left_arm_angles[0] = -60*_mult;
+		_inst.left_arm_angles[1] = 120*_mult;
+		_inst.left_arm_angles[2] = _inst.left_arm_angles[0];
+		_inst.leg_angles[0] = 60*_mult;
+		_inst.leg_angles[1] = -120*_mult;
+		
+		update_skeleton(_inst, _mult);
+		
+		let _time_skull = (songTime - _inst.skull_throw);
+		if (_time_skull > beats_to_seconds(4) and _inst.skull_explode == 0){
+			let _i = 0;
+			let _angle = irandom(44);
+			let _spin_dir = choose(1,-1);
+			while (_i <= 9){
+				let _size = 30/1000;
+				let _bone = create_bullet(_inst.skull_throw + beats_to_seconds(4),7.7 + _inst.skull_throw + beats_to_seconds(4),"bone.png",_inst.head_data.x,_inst.head_data.y,0,_size,_size,c_pink,0,true,bone_explode_init,bone_update,-1);
+				_bone.spin_magnitude = 6;
+				_bone.spin_direciton = _spin_dir;
+				_bone.direction = _angle + 36*_i;
+				_bone.speed = 10;
+				_i += 1;
+			}
+			_inst.skull_explode = 1;
+		}
+	}
+	side_bone_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		if (_time < 0.2){
+			_inst.image_blend = make_color_rgb(255,32 + 223*dcos(90*_time/0.2),112 + 143*dcos(90*_time/0.2));
+			_inst.image_xscale = _inst.base_scale + 0.5*dsin(180*_time/0.2);
+			_inst.image_yscale = _inst.base_scale + 0.1*dsin(180*_time/0.2);
+		}else{
+			_inst.image_blend = c_pink;
+			_inst.image_xscale = _inst.base_scale;
+			_inst.image_yscale = _inst.base_scale;
+		}
+		_inst.speed = clamp(15*(_time - beats_to_seconds(1)), 0, 15);
+	}
+	pulse_init = fun(_inst){
+		_inst.angle_direction = choose(-0.5,0.5);
+		_inst.base_scale = _inst.image_xscale;
+	}
+	pulse_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		_inst.image_angle += _inst.angle_direction;
+		if (_time < 2){
+			_inst.image_alpha = (0.3 + 0.1*sin(3*songTime))*_time/2;
+		}else{
+			_inst.canHurt = true;
+			_inst.image_alpha = 1;
+			if (_time < 2.2){
+				let _mult = dcos(90*(_time - 2)/0.2);
+				_inst.image_blend = make_color_rgb(255,32 + 223*_mult,112 + 143*_mult);
+				_inst.image_xscale = _inst.base_scale*(1 + 0.2*dsin(180*(_time - 2)/0.2));
+				_inst.image_yscale = _inst.image_xscale;
+			}else if (_time < 2.2 + _inst.duration){
+				_inst.image_blend = c_pink;
+				_inst.image_xscale = _inst.base_scale;
+				_inst.image_yscale = _inst.image_xscale;
+			}else{
+				_inst.image_blend = c_pink;
+				_inst.image_xscale = _inst.base_scale*dcos(90*(_time - 2.2 - _inst.duration)/0.2);
+				_inst.image_yscale = _inst.image_xscale;
+			}
+		}
+	}
+	big_skull_init = fun(_inst){
+		_inst.head_col = new create_obb_collision(_inst.x, _inst.y, _inst.z, 200, 350, 450);
+		_inst.head_col.originz = 6/9;
+		_inst.head_col.originy = 2/7;
+		_inst.jaw_col = new create_obb_collision(_inst.x, _inst.y, _inst.z, 200, 200, 450);
+		_inst.jaw_col.originz = 6/9;
+		_inst.jaw_col.originy = -1.75;
+		_inst.jaw = create_model(_inst.SpawnTime, _inst.DeathTime, "Skull_jaw.obj", _inst.x, _inst.y, _inst.z, _inst.scalex, _inst.scaley, _inst.scalez, _inst.image_blend, 0, -1, -1, -1);
+		_inst.base_y = 450;
+		_inst.angle = 0;
+		_inst.bones = 30; --TODO: reset
+		_inst.laser = 30;
+		_inst.bites = 30;
+		_inst.fire = 0;
+		_inst.prev_x = 3700;
+		_inst.target_x = 3900 + 500*irandom(2);
+		_inst.make_bones = fun(_inst, _amount, _offset, _spawn_time, _burst, _speed){
+			let _i = 0;
+			let _angle = 85 - irandom(9);
+			let _spin_dir = choose(1,-1);
+			while (_i <= _amount){
+				let _size = 60/1000;
+				_bone = create_bullet(_inst.SpawnTime + _spawn_time, _inst.SpawnTime + 4 + _spawn_time,"bone.png",_inst.x + _offset + 200*dcos(180*(_i > 8)),700,0,_size,_size,c_pink,0,true,bone_explode_init,bone_update,-1);
+				_bone.spin_magnitude = 6;
+				_bone.spin_direciton = _spin_dir;
+				_bone.direction = _angle - 20*_i;
+				_bone.speed = 15*_speed;
+				if (_burst){
+					_bone = create_bullet(_inst.SpawnTime + _spawn_time, _inst.SpawnTime + 6 + _spawn_time,"bone.png",_inst.x + _offset + 200*dcos(180*(_i > 8)),700,0,_size,_size,c_pink,0,true,bone_explode_init,bone_update,-1);
+					_bone.spin_magnitude = 6;
+					_bone.spin_direciton = _spin_dir;
+					_bone.direction = _angle - 10 - 20*_i;
+					_bone.speed = 12.5*_speed;
+					_bone = create_bullet(_inst.SpawnTime + _spawn_time, _inst.SpawnTime + 5 + _spawn_time,"bone.png",_inst.x + _offset + 200*dcos(180*(_i > 8)),700,0,_size,_size,c_pink,0,true,bone_explode_init,bone_update,-1);
+					_bone.spin_magnitude = 6;
+					_bone.spin_direciton = _spin_dir;
+					_bone.direction = _angle - 20*_i;
+					_bone.speed = 10*_speed;
+				}
+				_i += 1;
+			}
+		}
+	}
+	big_skull_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		
+		if (_time > beats_to_seconds(1)){
+			if (_time < beats_to_seconds(3)){
+				let _mult = (_time - beats_to_seconds(1))/beats_to_seconds(2);
+				_inst.x = 450 + 350*dcos(180*_mult);
+				_inst.z = 200 + 400*dsin(180*_mult);
+				_inst.ry = 90*(800 - _inst.x)/700;
+			}else if (_time < beats_to_seconds(29)){
+				let _time2 = (_time - beats_to_seconds(1))%beats_to_seconds(2);
+				_inst.x = 100 + 225*floor((_time - beats_to_seconds(3))/beats_to_seconds(2)) + 225*clamp((_time2 - beats_to_seconds(1))/beats_to_seconds(1), 0, 1);
+				_inst.z = 200;
+				_inst.ry = 90;
+			}else if (_time < beats_to_seconds(31)){
+				let _time2 = _time%beats_to_seconds(1);
+				_inst.x = 3025 + 225*floor((_time - beats_to_seconds(29))/beats_to_seconds(1)) + 225*clamp((_time2 - beats_to_seconds(0.5))/beats_to_seconds(0.5), 0, 1);
+				_inst.z = 200;
+				_inst.ry = 90;
+			}else if (_time < beats_to_seconds(33)){
+				let _time2 = (_time - beats_to_seconds(1))%beats_to_seconds(2);
+				_inst.x = 3475 + 225*clamp((_time2 - beats_to_seconds(1))/beats_to_seconds(1), 0, 1);
+				_inst.z = 200;
+				_inst.ry = 90;
+			}else if (_time < beats_to_seconds(36)){
+				let _mult = max(_time - beats_to_seconds(33.5), 0)/beats_to_seconds(2.5);
+				let _mult2 = clamp(_time - beats_to_seconds(33.5), 0, beats_to_seconds(1.5))/beats_to_seconds(1.5);
+				let _diff = _inst.target_x - _inst.prev_x;
+				_inst.x = _inst.prev_x + _diff/2 - _diff*dcos(180*_mult)/2;
+				_inst.z = 200 + 800*dsin(90*_mult2);
+				_inst.ry = 90*dcos(90*_mult2);
+			}else if (_inst.bites < 8){
+				let _cycle = _time - beats_to_seconds(34 + 4*_inst.bites);
+				let _diff = _inst.target_x - _inst.prev_x;
+				_inst.x = _inst.prev_x + _diff/2 - _diff*dcos(180*clamp(_cycle/beats_to_seconds(2), 0, 1))/2;
+				_inst.z = 200 + 800*dcos(clamp(90*(_cycle - beats_to_seconds(2))/beats_to_seconds(1), 0, 90) - 90*clamp((_cycle - beats_to_seconds(3))/beats_to_seconds(1), 0, 1));
+				_inst.ry = 0;
+				if (_cycle > beats_to_seconds(4)){
+					_inst.bites += 1;
+					_inst.prev_x = _inst.target_x;
+					let _first = true;
+					while (_first or _inst.target_x == _inst.prev_x){
+						_inst.target_x = 3900 + 500*irandom(2);
+						_first = false;
+					}
+				}
+			}else if (_time < beats_to_seconds(68)){
+				let _diff = 4400 - _inst.prev_x;
+				_inst.x = _inst.prev_x + _diff/2 - _diff*dcos(180*min((_time - beats_to_seconds(66))/beats_to_seconds(2), 1))/2;
+				_inst.z = 1000;
+				_inst.ry = 0;
+			}else{
+				_inst.x = 4400;
+				_inst.z = 1000;
+				_inst.ry = 0;
+			}
+		}
+		
+		if (_time > beats_to_seconds(69) and _inst.fire == 0){
+			_inst.fire_ball = create_background(_inst.SpawnTime + beats_to_seconds(69), _inst.SpawnTime + beats_to_seconds(80), "fire ball.png", 4400, 550, 1000, 0, 0, c_pink, 1, -1, -1, -1)
+			_inst.fire += 1;
+		}else if (_inst.fire > 0){
+			if (_inst.fire < 15){
+				if (_time < beats_to_seconds(80)){
+					_inst.fire_ball.image_xscale = (0.3 + 0.02*dsin(360*_time/beats_to_seconds(2)))*(_time - beats_to_seconds(69))/beats_to_seconds(11);
+					_inst.fire_ball.image_yscale = _inst.fire_ball.image_xscale;
+					_inst.fire_ball.image_angle += 15;
+				}
+				if (_time > beats_to_seconds(70 + _inst.fire - max(_inst.fire - 6, 0)/2 - max(_inst.fire - 10, 0)/6) and _inst.fire < 14){
+					let _spawn_time = 70 + _inst.fire - max(_inst.fire - 6, 0)/2 - max(_inst.fire - 10, 0)/6;
+					let _direction = dcos(180*_inst.fire);
+					let _bullet = create_bullet(_inst.SpawnTime + beats_to_seconds(_spawn_time), _inst.SpawnTime + beats_to_seconds(_spawn_time + 5), "fire ball.png", 4400 + 400*_direction*_inst.fire_ball.image_xscale, 550, 1000, 0.03, 0.03, c_pink, 0, false, fire_ball_init, fire_ball_update, -1);
+					_bullet.directionn = _direction;
+					_bullet.target_y = irandom_range(50, 750);
+					if (_inst.fire == 13){
+						let _bullet2 = create_bullet(_inst.SpawnTime + beats_to_seconds(_spawn_time), _inst.SpawnTime + beats_to_seconds(_spawn_time + 5), "fire ball.png", 4400 - 400*_direction*_inst.fire_ball.image_xscale, 550, 1000, 0.03, 0.03, c_pink, 0, false, fire_ball_init, fire_ball_update, -1);
+						_bullet2.directionn = -_direction;
+						_bullet2.target_y = irandom_range(50, 750);
+					}
+					_inst.fire += 1;
+				}else if (_time > beats_to_seconds(80) and _inst.fire == 14){
+					let _spawn_time = 80;
+					let _i = 0;
+					while (_i < 11){
+						let _offset = irandom(25)/100;
+						let _bullet = create_bullet(_inst.SpawnTime + beats_to_seconds(_spawn_time - _offset), _inst.SpawnTime + beats_to_seconds(_spawn_time + 5 - _offset), "fire ball.png", 4400 + 120, 550 + irandom_range(-75, 75), 1000, 0.03, 0.03, c_pink, 0, false, fire_ball_init, fire_ball_update, -1);
+						_bullet.directionn = 1;
+						_bullet.target_y = 50 + _i*80 + irandom_range(-15, 15);
+						_offset = irandom(25)/100;
+						let _bullet2 = create_bullet(_inst.SpawnTime + beats_to_seconds(_spawn_time - _offset), _inst.SpawnTime + beats_to_seconds(_spawn_time + 5 - _offset), "fire ball.png", 4400 - 120, 550 + irandom_range(-75, 75), 1000, 0.03, 0.03, c_pink, 0, false, fire_ball_init, fire_ball_update, -1);
+						_bullet2.directionn = -1;
+						_bullet2.target_y = 50 + _i*80 + irandom_range(-15, 15);
+						_i += 1;
+					}
+					_inst.fire += 1;
+				}
+			}else if (_inst.fire < 23){
+				if (_time > beats_to_seconds(81.67 + (_inst.fire - 15)/3)){
+					
+				}
+			}
+		}
+		
+		if (_time < 0.2){
+			let _mult = dcos(90*_time/0.2);
+			_inst.image_blend = make_color_rgb(255, 32 + 223*_mult, 112 + 143*_mult);
+			_inst.scalex = 180*(1 + 0.2*dsin(180*_time/0.2));
+		}else{
+			if (_time < beats_to_seconds(29) or (_time >= beats_to_seconds(31) and _time < beats_to_seconds(34))){
+				let _cycle = _time%beats_to_seconds(2);
+				let _cycle2 = (_time - beats_to_seconds(1))%beats_to_seconds(2);
+				let _mult = dcos(clamp(90*_cycle2/0.2, 0, 90));
+				_inst.image_blend = make_color_rgb(255, 32 + 223*_mult, 112 + 143*_mult);
+				_inst.scalex = 180*(1 + 0.2*dsin(clamp(180*(_cycle - beats_to_seconds(1))/0.2, 0, 180)))*(1.125 - _inst.z/1600);
+			}else if (_time < beats_to_seconds(31)){
+				let _cycle = _time%beats_to_seconds(1);
+				let _mult = dcos(clamp(90*_cycle/0.2, 0, 90));
+				_inst.image_blend = make_color_rgb(255, 32 + 223*_mult, 112 + 143*_mult);
+				_inst.scalex = 180*(1 + 0.2*dsin(min(180*_cycle/0.2, 180)))*(1.125 - _inst.z/1600);
+			}else if (_time < beats_to_seconds(68)){
+				let _cycle = max(_time - beats_to_seconds(37), 0)%beats_to_seconds(4);
+				let _mult = dcos(clamp(90*_cycle/0.2, 0, 90));
+				if (_time < beats_to_seconds(37)){
+					_inst.image_blend = c_pink;
+				}else{
+					_inst.image_blend = make_color_rgb(255, 32 + 223*_mult, 112 + 143*_mult);
+				}
+				_inst.scalex = 180*(1 + 0.2*dsin(min(180*_cycle/0.2, 180)))*(1.125 - _inst.z/1600);
+			}else{
+				_inst.image_blend = c_pink;
+				_inst.scalex = 180*(1.125 - _inst.z/1600);
+			}
+		}
+		
+		if (_inst.bones < 18){
+			let _spawn_time = beats_to_seconds(1 + 2*_inst.bones - (_inst.bones >= 15) - (_inst.bones >= 16));
+			if (_time > _spawn_time){
+				_inst.make_bones(_inst, 9 + 9*(_inst.bones == 0), 500*(_inst.bones > 0), _spawn_time, (_inst.bones == 0 or _inst.bones == 8 or _inst.bones == 17), 1);
+				_inst.bones += 1;
+			}
+		}else if (_inst.bones < 26){
+			let _spawn_time = beats_to_seconds(37 + 4*(_inst.bones - 18));
+			if (_time > _spawn_time){
+				_inst.make_bones(_inst, 18, 0, _spawn_time, (_inst.bones%4 == 1), 0.67);
+				_inst.bones += 1;
+			}
+		}
+		
+		if (_time > beats_to_seconds(8 + 8*_inst.laser) - 2 and _inst.laser < 3){
+			let _x = 240*(_time - beats_to_seconds(1)) - 100;
+			let _player = get_players("farthest", 1, _x, 700)[0];
+			let _laser = create_bullet(_inst.SpawnTime + beats_to_seconds(8 + 8*_inst.laser) - 2, _inst.SpawnTime + beats_to_seconds(9 + 8*_inst.laser), "pixel2x2.png", _x, 700, 0, 2000, 0, c_pink, 1, false, rot_laser_init, rot_laser_update, -1);
+			_laser.width = 200;
+			_laser.scroll = true;
+			let _angle = point_direction(_x, 700, _player.x, _player.y);
+			if (_angle > 180){
+				_angle -= 360;
+			}
+			_laser.image_angle = clamp(_angle, -20, 20)
+			_inst.laser += 1;
+		}
+		
+		if (_time < beats_to_seconds(29) or (_time >= beats_to_seconds(31) and _time < beats_to_seconds(33))){
+			let _cycle = _time%beats_to_seconds(2);
+			_inst.angle = 30*dsin(min(90*_cycle/beats_to_seconds(0.3), 90) + clamp(90*(_cycle - beats_to_seconds(0.8))/beats_to_seconds(0.2), 0, 90));
+		}else if (_time < beats_to_seconds(31)){
+			let _cycle = _time%beats_to_seconds(1);
+			_inst.angle = 30*dsin(clamp(90*(_cycle - beats_to_seconds(0.5))/beats_to_seconds(0.3), 0, 90) + clamp(90*(_cycle - beats_to_seconds(0.8))/beats_to_seconds(0.2), 0, 90));
+		}else if (_time < beats_to_seconds(65)){
+			let _cycle = (_time - beats_to_seconds(1))%beats_to_seconds(4);
+			let _cycle2 = _cycle%beats_to_seconds(1);
+			if (_cycle < beats_to_seconds(3)){
+				_inst.angle = 3*dsin(clamp(90*(_cycle2 - beats_to_seconds(0.5))/beats_to_seconds(0.3), 0, 90) + clamp(90*(_cycle2 - beats_to_seconds(0.8))/beats_to_seconds(0.2), 0, 90));
+				_inst.base_y = 450 + 25*_inst.angle;
+			}else{
+				_inst.angle = 30*dsin(min(90*(_cycle - beats_to_seconds(3))/beats_to_seconds(0.3), 90) + clamp(90*(_cycle - beats_to_seconds(3.8))/beats_to_seconds(0.2), 0, 90));
+				_inst.base_y = 450;
+			}
+		}else if (_time < beats_to_seconds(80)){
+			_inst.base_y = 450 + 10*dsin(180*(_time - beats_to_seconds(65)));
+			if (_time < beats_to_seconds(70)){
+				_inst.angle = 10 - 10*dcos(180*max(_time - beats_to_seconds(68), 0)/beats_to_seconds(2));
+			}else if (_time < beats_to_seconds(79)){
+				_inst.angle = 20 + 2*dsin(360*(_time - beats_to_seconds(70))/beats_to_seconds(2));
+			}else{
+				_inst.angle = 20 + 5*dsin(90*min((_time - beats_to_seconds(79))/beats_to_seconds(0.3), 1)) - (25 - 25*dcos(90*max((_time - beats_to_seconds(79.8))/beats_to_seconds(0.2), 0)))
+			}
+		}else{
+			_inst.angle = 0;
+			_inst.base_y = 450;
+		}
+		
+		_inst.y = _inst.base_y - 10*_inst.angle;
+		_inst.jaw.y = _inst.base_y + 10*_inst.angle/8;
+		
+		_inst.rx = _inst.angle*dcos(_inst.ry);
+		_inst.rz = _inst.angle*dsin(_inst.ry);
+		
+		_inst.scaley = _inst.scalex;
+		_inst.scalez = _inst.scalex;
+		_inst.jaw.x = _inst.x;
+		_inst.jaw.z = _inst.z;
+		_inst.jaw.rx = -_inst.rx;
+		_inst.jaw.ry = _inst.ry;
+		_inst.jaw.rz = -_inst.rz;
+		_inst.jaw.scalex = _inst.scalex;
+		_inst.jaw.scaley = _inst.scaley;
+		_inst.jaw.scalez = _inst.scalez;
+		_inst.jaw.image_blend = _inst.image_blend;
+		
+		_inst.head_col.x = _inst.x;
+		_inst.head_col.y = _inst.y;
+		_inst.head_col.z = _inst.z;
+		_inst.head_col.rx = _inst.rx;
+		_inst.head_col.ry = _inst.ry;
+		_inst.head_col.rz = _inst.rz;
+		_inst.jaw_col.x = _inst.jaw.x;
+		_inst.jaw_col.y = _inst.jaw.y;
+		_inst.jaw_col.z = _inst.jaw.z;
+		_inst.jaw_col.rx = _inst.jaw.rx;
+		_inst.jaw_col.ry = _inst.jaw.ry;
+		_inst.jaw_col.rz = _inst.jaw.rz;
+	}
+	fire_ball_init = fun(_inst){
+		_inst.start_x = _inst.x;
+		_inst.start_y = _inst.y;
+		_inst.spawn_sprite = create_background(_inst.SpawnTime,_inst.SpawnTime + 0.2,"circle.png",_inst.x,_inst.y,_inst.depth + 1,0,0,#FFFFFF,1,-1,-1,-1);
+		_inst.particle = 0;
+	}
+	fire_ball_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		let _scale = 0.03 + 0.05*dsin(min(90*_time/beats_to_seconds(2), 90))
+		
+		if (_time < beats_to_seconds(2)){
+			let _target_x = 4400 + 750*_inst.directionn;
+			let _diff_x = _target_x - _inst.start_x;
+			let _diff_y = _inst.target_y - _inst.start_y;
+			let _mult = dsin(90*_time/beats_to_seconds(2));
+			_inst.x = _inst.start_x + _diff_x*_mult;
+			_inst.y = _inst.start_y + _diff_y*_mult;
+			_inst.depth = 1000 - 1000*_mult;
+			_inst.image_alpha = 0.5 + 0.5*_mult;
+		}else{
+			_inst.canHurt = true;
+			let _start_x = 4400 + 750*_inst.directionn;
+			let _target_x = 4400 - 950*_inst.directionn;
+			let _diff = _target_x - _start_x;
+			_inst.x = _start_x + _diff - _diff*dcos(90*(_time - beats_to_seconds(2))/beats_to_seconds(3));
+			_inst.y = _inst.target_y;
+			_inst.depth = 0;
+			_inst.image_alpha = 1;
+		}
+		
+		if (_time > beats_to_seconds(0.075*_inst.particle)){
+			create_background(_inst.SpawnTime + beats_to_seconds(0.075*_inst.particle), _inst.SpawnTime + beats_to_seconds(0.4 + 0.075*_inst.particle), "circle.png", _inst.x + irandom(-15, 15), _inst.y + irandom(-15, 15), _inst.depth + 1, _inst.image_xscale*0.5, _inst.image_xscale*0.5, c_pink, _inst.image_alpha*0.5, fire_particle_init, fire_particle_update, -1);
+			_inst.particle += 1;
+		}
+		
+		if (_time < 0.2){
+			_inst.spawn_sprite.x = _inst.x;
+			_inst.spawn_sprite.y = _inst.y;
+			_inst.spawn_sprite.depth = _inst.depth + 1;
+			_inst.spawn_sprite.image_xscale = _scale*1.5*dsin(90*_time/0.1);
+			_inst.spawn_sprite.image_yscale = _inst.spawn_sprite.image_xscale;
+			_inst.spawn_sprite.image_alpha = _inst.image_alpha;
+			_inst.image_alpha *= (_time >= 0.1);
+		}
+		
+		_inst.image_xscale = _scale;
+		_inst.image_yscale = _scale;
+		_inst.image_angle += 15*_inst.directionn;
+	}
+	fire_particle_init = fun(_inst){
+		_inst.base_alpha = _inst.image_alpha;
+		_inst.base_scale = _inst.image_xscale;
+	}
+	fire_particle_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		let _mult = dcos(90*_time/beats_to_seconds(0.4));
+		
+		_inst.image_alpha = _inst.base_alpha*_mult;
+		_inst.image_xscale = _inst.base_scale*_mult;
+		_inst.image_yscale = _inst.image_xscale;
+	}
+	big_skull_clean = fun(_inst){
+		_inst.head_col.clean_up();
+		_inst.jaw_col.clean_up();
+	}
+	warning_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		_inst.image_alpha = (0.3 + 0.1*sin(3*songTime))*_time/2;
+	}
+	laughing_skull_init = fun(_inst){
+		_inst.jaw = create_bullet(_inst.SpawnTime, _inst.DeathTime, "jaw.png", _inst.x, _inst.y + 145*_inst.image_xscale, _inst.depth, _inst.image_xscale, _inst.image_xscale, c_pink, _inst.image_alpha, _inst.canHurt, -1, -1, -1)
+		_inst.base_yy = _inst.y;
+		_inst.base_x = _inst.x;
+		_inst.base_scale = _inst.image_xscale;
+		_inst.base_alpha = _inst.image_alpha;
+	}
+	laughing_skull_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		let _offset = 5*dsin(360*_time/0.25)
+		
+		if (songTime > _inst.DeathTime - 0.2){
+			_inst.image_xscale = _inst.base_scale*dcos(90 - 90*(_inst.DeathTime - songTime)/0.2);
+		}
+		
+		if (_time < beats_to_seconds(1)){
+			_inst.image_alpha = _inst.base_alpha*_time/beats_to_seconds(1);
+		}else{
+			_inst.image_alpha = _inst.base_alpha;
+		}
+		
+		_inst.image_yscale = _inst.image_xscale;
+		_inst.jaw.image_alpha = _inst.image_alpha;
+		_inst.jaw.image_xscale = _inst.image_xscale;
+		_inst.jaw.image_yscale = _inst.image_yscale;
+		
+		let _size = _inst.image_xscale;
+		
+		if (_inst.canHurt){
+			_inst.base_y = 450 + 250*dsin(30*_time + _inst.offset);
+		}else{
+			let _camera = get_level_position();
+			if (_camera.x - 100 > _inst.base_x){
+				_inst.base_x += 1800;
+			}
+			_inst.x = _inst.base_x + 10*dsin(135*_time + _inst.offset*0.8);
+			_inst.jaw.x = _inst.x;
+			_inst.base_y = _inst.base_yy + 10*dsin(180*_time + _inst.offset);
+		}
+		
+		_inst.y = _inst.base_y - (20 + _offset)*_size;
+		_inst.jaw.y = _inst.base_y + (140 + _offset)*_size;
+	}
+	rot_laser_init = fun(_inst){
+		_inst.warning = create_background(_inst.SpawnTime, _inst.SpawnTime + 2, "pixel2x2.png", _inst.x, _inst.y, 0, _inst.image_xscale, 0, c_pink, 1, -1, -1, -1)
+		_inst.base_x = _inst.x;
+		_inst.base_y = _inst.y;
+		_inst.scroll = false;
+	}
+	rot_laser_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		
+		if (_inst.scroll){
+			let _values = get_level_scroll();
+			_inst.base_x += _values.x;
+			_inst.base_y += _values.y;
+		}
+		
+		_inst.x = _inst.base_x + _inst.image_xscale*dcos(_inst.image_angle);
+		_inst.y = _inst.base_y - _inst.image_xscale*dsin(_inst.image_angle);
+		_inst.image_yscale = _inst.width*dsin(clamp(90*(_time - 2)/0.2, 0, 90) + clamp(90*(songTime - _inst.DeathTime + 0.2)/0.2, 0, 90))
+		
+		if (_time < 2){
+			_inst.warning.image_angle = _inst.image_angle;
+			_inst.warning.x = _inst.x;
+			_inst.warning.y = _inst.y;
+			_inst.warning.image_xscale = _inst.image_xscale;
+			_inst.warning.image_yscale = _inst.width;
+			_inst.warning.image_alpha = (0.3 + 0.1*sin(3*songTime))*(songTime - _inst.SpawnTime)/2;
+		}else{
+			_inst.canHurt = true;
+		}
+	}
+	small_skull_init = fun(_inst){
+		let _mult = _inst.scalex/180;
+		_inst.collision = create_bullet(_inst.SpawnTime, _inst.DeathTime, "pixel2x2.png", _inst.x, _inst.y, 0, 40, 40, 0, 0, true, -1, -1, -1, true);
+		_inst.base_x = _inst.x;
+		_inst.base_y = _inst.y;
+		_inst.jaw = create_model(_inst.SpawnTime, _inst.DeathTime, "Skull_jaw.obj", _inst.x, _inst.y, _inst.z, _inst.scalex, _inst.scaley, _inst.scalez, _inst.image_blend, 0, -1, -1, -1);
+	}
+	small_skull_update = fun(_inst){
+		let _time = songTime - _inst.SpawnTime;
+		let _cycle = _time%beats_to_seconds(2);
+		let _angle = -10*dcos(360*_time)*(1 + 2*(_inst.ry - 90)/180);
+		let _angle_parts = (20*dsin(min(90*_cycle/beats_to_seconds(0.2), 90) + clamp(90*(_cycle - beats_to_seconds(1))/beats_to_seconds(0.2), 0, 90)))*dsin(_inst.ry);
+		
+		_inst.x = _inst.base_x + (60 - 60*dcos(min(90*_time/beats_to_seconds(3), 90)))*_inst.speed + 60*_inst.speed*max(_time - beats_to_seconds(3), 0);
+		_inst.y = _inst.base_y + 20*dsin(360*_time);
+		
+		_inst.rz = _angle + _angle_parts;
+		_inst.jaw.x = _inst.x;
+		_inst.jaw.y = _inst.y;
+		_inst.jaw.ry = _inst.ry;
+		_inst.jaw.rz = _angle - _angle_parts;
+		
+		_inst.collision.x = _inst.x;
+		_inst.collision.y = _inst.y;
+		_inst.collision.image_angle = _angle;
+	}
+});
+update_event ( fun (_song_playing) {
+	songTime = get_songtime();
+	if (songTime > beats_to_seconds(phases[0]/6 + 2*floor(phases[0]/36)) and phases[0] < 72){
+		let _size = irandom_range(30,60)/1000;
+		create_bullet(beats_to_seconds(phases[0]/6 + 2*floor(phases[0]/36)),7.7 + beats_to_seconds(phases[0]/6 + 2*floor(phases[0]/36)),"bone.png",1600,irandom_range(30, 870),0,_size,_size,c_pink,0,true,bone_init,bone_update,-1);
+		phases[0] += 1;
+	}else if (songTime > beats_to_seconds(phases[0] - 42) and phases[0] >= 72 and phases[0] < 86){
+		let _not_selected = true;
+		while (_not_selected){
+			let _selection = irandom(10);
+			let _up = 11*(phases[0]%2);
+			let _chosen = pool[_up + _selection];
+			if (_chosen.skull_throw == -1){
+				_chosen.skull_throw = beats_to_seconds(phases[0] - 42);
+				_not_selected = false;
+			}
+		}
+		phases[0] += 1;
+	}else if (songTime > beats_to_seconds(2*phases[0] - 128) and phases[0] >= 86 and phases[0] < 102){
+		let _not_selected = true;
+		while (_not_selected){
+			let _selection = irandom(10);
+			let _up = 11*(phases[0]%2);
+			let _chosen = pool[_up + _selection];
+			if (_chosen.skull_throw == -1){
+				_chosen.skull_throw = beats_to_seconds(2*phases[0] - 128);
+				_chosen.skull_explode = 0;
+				_not_selected = false;
+			}
+		}
+		phases[0] += 1;
+	}else if (songTime > beats_to_seconds(79) and phases[0] == 102){
+		if (songTime >= beats_to_seconds(80)){
+			phases[0] += 1;
+			set_level_wobble(0, 0, 0);
+		}else{
+			let _i = 0;
+			let _mult = dcos(90*(songTime - beats_to_seconds(79))/beats_to_seconds(1));
+			set_level_wobble(beats_to_seconds(16), 10*_mult, 67.5);
+			while (_i <= 10){
+				pool[_i].y = 1450 - 300*_mult;
+				pool[11 + _i].y = -550 + 300*_mult;
+				_i += 1;
+			}
+		}
+	}else if (songTime > beats_to_seconds(95) and phases[0] == 103){
+		let _i = 100;
+		while (_i <= 1750){
+			let _j = 50;
+			while (_j < 900){
+				let _bullet = create_bullet(beats_to_seconds(95), beats_to_seconds(160), "head.png", _i, _j, 3200, 0.5, 0.5, c_pink, 0.25, false, laughing_skull_init, laughing_skull_update, -1);
+				_bullet.offset = irandom(359);
+				_j += 200;
+			}
+			_i += 200;
+		}
+		phases[0] += 1;
+	}else if (songTime > beats_to_seconds(96) and phases[0] == 104){
+		let _i = 200;
+		let _prev_offset = -1;
+		while (_i < 3750){
+			let _bullet = create_bullet(beats_to_seconds(95), beats_to_seconds(128), "head.png", 1600 + _i, 450, 200, 1, 1, c_pink, 1, true, laughing_skull_init, laughing_skull_update, -1);
+			let _start = true;
+			while (_start or (_prev_offset >= 0 and abs(_bullet.offset - _prev_offset) <= 60)){
+				_bullet.offset = irandom(359);
+				_start = false;
+			}
+			_prev_offset = _bullet.offset;
+			_i += 550;
+		}
+		phases[0] += 1;
+	}else if (songTime > beats_to_seconds(24 + phases[0]) and phases[0] >= 105 and phases[0] < 136){
+		let _bullet = create_model(beats_to_seconds(24 + phases[0]), beats_to_seconds(24 + phases[0]) + 4.75, "Skull_head.obj", 4400 + 900*dcos(180*(phases[0]%2)), irandom_range(40, 860), 0, 12, 12, 12, c_purple, 0, small_skull_init, small_skull_update, -1);
+		_bullet.ry = -90*dcos(180*(phases[0]%2));
+		_bullet.speed = 7*sign(_bullet.ry);
+		phases[0] += 1;
+	}
+	
+	if (songTime > beats_to_seconds(5.833 + phases[1]/12 + 0.247*floor(phases[1]/3) + 6.5*floor(phases[1]/9)) - 2 and phases[1] < 18){
+		let _bone = create_bullet(beats_to_seconds(5.833 + phases[1]/12 + 0.247*floor(phases[1]/3) + 6.5*floor(phases[1]/9)) - 2,2 + beats_to_seconds(5.833 + phases[1]/12 + 0.247*floor(phases[1]/3) + 6.5*floor(phases[1]/9)),"bone top.png",900 + 65*(phases[1]%9),-200,0,0.1,0.1,c_pink,1,true,bone_wall_init,bone_wall_update,-1);
+		_bone.direction = 180;
+		_bone.length = (100 + 60*(phases[1]%9 + 1))*(1 - 2*(floor(phases[1]/3)%2));
+		_bone.floor_y = -100 + 1100*(floor(phases[1]/3)%2);
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(phases[1] - 2) and phases[1] >= 18 and phases[1] < 46){
+		let _bone = create_bullet(beats_to_seconds(phases[1] - 2),4 + beats_to_seconds(phases[1] - 2),choose("arm bottom.png", "arm top.png", "leg bottom.png", "leg top.png"),30 + 1540*(phases[1]%2),irandom_range(200, 600),0,0,0,#FFFFFF,1,true,-1,side_bone_update,-1);
+		_bone.direction = 180*(phases[1]%2);
+		_bone.base_scale = 0.5;
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(2*phases[1] - 29) and phases[1] >= 46 and phases[1] < 52){
+		let _not_selected = true;
+		while (_not_selected){
+			let _selection = irandom(10);
+			let _chosen = pool[_selection];
+			if (_chosen.skull_throw == -1){
+				_chosen.skull_throw = beats_to_seconds(2*phases[1] - 29);
+				_not_selected = false;
+			}
+		}
+		_not_selected = true;
+		while (_not_selected){
+			let _selection = irandom(10);
+			let _chosen = pool[11 + _selection];
+			if (_chosen.skull_throw == -1){
+				_chosen.skull_throw = beats_to_seconds(2*phases[1] - 29);
+				_not_selected = false;
+			}
+		}
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(28 + phases[1]) - 2 and phases[1] >= 52 and phases[1] < 61){
+		let _i = (phases[1] == 60);
+		while (_i < 2){
+			let _bullet = create_bullet(beats_to_seconds(28 + phases[1]) - 2, beats_to_seconds(29.5 - 1.033*(phases[1] == 60) + phases[1]) + 0.4,"skull " + string(1 + phases[1]%2) + ".png",irandom_range(75, 1525),irandom_range(75, 825),0,0.2,0.2,c_pink,0,false,pulse_init,pulse_update,-1);
+			if (phases[1] == 60){
+				_bullet.x = 800;
+				_bullet.y = 450;
+				_bullet.angle_direction = 0;
+				_bullet.duration = beats_to_seconds(0.467);
+			}else{
+				_bullet.image_angle = irandom(359);
+				_bullet.duration = beats_to_seconds(1.5);
+			}
+			_i += 1;
+		}
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(88.667 + 0.667*(phases[1] - 61)) and phases[1] >= 61 and phases[1] < 66){
+		let _scale = 0.2 + 0.05*(phases[1] - 60);
+		let _bullet = create_bullet(beats_to_seconds(88.667 + 0.667*(phases[1] - 61)) - 2, beats_to_seconds(89.034 + 0.667*(phases[1] - 61)) + 0.4,"skull " + string(1 + phases[1]%2) + ".png",800,450,-phases[1],_scale,_scale,c_pink,0,false,pulse_init,pulse_update,-1);
+		_bullet.duration = beats_to_seconds(0.367);
+		_bullet.angle_direction = 0;
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(92 + 0.334*(phases[1] - 66)) and phases[1] >= 66 and phases[1] < 75){
+		let _scale = 0.5 + 0.075*(phases[1] - 66);
+		let _bullet = create_bullet(beats_to_seconds(92 + 0.334*(phases[1] - 66)) - 2, beats_to_seconds(92.034 + 0.334*(phases[1] - 66)) + 0.4,"skull " + string(1 + phases[1]%2) + ".png",800,450,-phases[1],_scale,_scale,c_pink,0,false,pulse_init,pulse_update,-1);
+		_bullet.duration = beats_to_seconds(0.034);
+		_bullet.angle_direction = 0;
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(95) and phases[1] == 75){
+		big_skull = create_model(beats_to_seconds(95), beats_to_seconds(208), "Skull_head.obj", 800, 450, 200, 180, 180, 180, c_pink, 0, big_skull_init, big_skull_update, -1, big_skull_clean);
+		phases[1] += 1;
+	}else if (songTime > beats_to_seconds(96) and phases[1] == 76){
+		set_level_scroll(4, 0);
+		if (songTime <= beats_to_seconds(98)){
+			let _time = songTime - beats_to_seconds(96);
+			let _span = beats_to_seconds(2);
+			set_level_tilt(beats_to_seconds(96), 4*_time/_span, 96);
+		}else{
+			set_level_tilt(beats_to_seconds(96), 4, 96);
+			phases[1] += 1;
+		}
+	}else if (songTime > beats_to_seconds(128) and phases[1] == 77){
+		set_level_tilt(0, 0, 0);
+		set_level_scroll(0, 0);
+		set_level_position(3600, 0)
+		phases[1] += 1;
+	}
+	
+	if (songTime > beats_to_seconds(15) - 2 and phases[2] == 0){
+		let _i = 0;
+		while (_i < 2){
+			let _laser = create_bullet(beats_to_seconds(15) - 2,0.2 + beats_to_seconds(16),"pixel2x2.png",-200,50 + 800*_i,0,0,0,c_pink,1,true,laser_init,laser_update,-1);
+			_laser.duration = beats_to_seconds(1);
+			_laser.orientation = 2*_i;
+			_laser.width = 300;
+			_i += 1;
+		}
+		phases[2] += 1;
+	}else if (songTime > beats_to_seconds(16) and phases[2] == 1){
+		let _i = 0;
+		while (_i <= 10){
+			let _skeleton = create_background(beats_to_seconds(16), beats_to_seconds(80),"pixel2x2.png",50 + 150*_i,1150,0,0.2,0,c_pink,0,skeleton_init,skeleton_update,-1);
+			_skeleton.offset = beats_to_seconds(1)*(_i%2);
+			pool[_i] = _skeleton;
+			_skeleton = create_background(beats_to_seconds(16), beats_to_seconds(80),"pixel2x2.png",50 + 150*_i,-250,0,0.2,0,c_pink,0,skeleton_init,skeleton_update,-1);
+			_skeleton.offset = beats_to_seconds(1)*((_i + 1)%2);
+			_skeleton.image_angle = 180;
+			pool[11 + _i] = _skeleton;
+			_i += 1;
+		}
+		set_level_wobble(beats_to_seconds(16), 10, 67.5);
+		phases[2] += 1;
+	}else if (songTime > beats_to_seconds(98) - 2 and phases[2] == 2){
+		create_background(beats_to_seconds(98) - 2, beats_to_seconds(98), "pixel2x2.png", 300, 450, 0, 500, 550, c_pink, 0, -1, warning_update, -1);
+		phases[2] += 1;
+	}
+} );
+--draw_event ( fun { --This is optional
+	--Nothing
+--} );
+--rewind_event ( fun (player) { --This is optional
+	--Nothing
+--} );

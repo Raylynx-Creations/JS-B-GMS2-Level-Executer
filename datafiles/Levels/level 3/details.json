@@ -1,0 +1,13 @@
+{
+    "song":["Spooky Scary Skeletons"],
+    "artist":[["The Living Tombstone", ""]],
+    "bg_slot":"image.png",
+    "song_type":["remixed"],
+    "level_by":["Raylynx Esper","Raylynx.gif"],
+    "level_type":"Normal",
+    "version":"1.0.0",
+    "color_level_type":{"r":0, "g":255, "b":255},
+    "difficulty":3,
+    "play_as":"Shape",
+    "hp":3
+}

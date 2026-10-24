@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"mus_menu",
   "audioGroupId":{
     "name":"music_group",
     "path":"audiogroups/music_group",
   },
   "bitDepth":1,
-  "bitRate":128,
+  "channelFormat":0,
   "compression":1,
+  "compressionQuality":4,
   "conversionMode":0,
   "duration":76.79923,
+  "exportDir":"",
   "name":"mus_menu",
   "parent":{
     "name":"Music",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"mus_menu.ogg",
-  "type":0,
   "volume":1.0,
 }

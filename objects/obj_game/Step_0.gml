@@ -7,56 +7,58 @@ if (room == rm_level){
 			}
 		break;
 		case level.ready:
-			try{
-				compilation();
-			}catch (e){
-				show_message(e.message);
-				state = level.error;
-				break;
-			}
-			if (!PlayerCreated){
-				PlayerCreated = true;
+			if (areModelsLoaded()){
+				try{
+					compilation();
+				}catch (e){
+					show_message(e.message);
+					state = level.error;
+					break;
+				}
+				if (!PlayerCreated){
+					PlayerCreated = true;
+					for (var i=0;i<Players;i++){
+						var colspec = make_color_hsv(PlayerData[i].hue, PlayerData[i].saturation, PlayerData[i].value);
+						var jugador = instance_create_depth(246, 250 + 400/(Players + 1)*(i + 1), 0, obj_player, {control_type: PlayerData[i].control_type, control_id: PlayerData[i].control_id, zurdo: PlayerData[i].zurdo, modo: (Mode != mode.none) ? Mode : mode.shape, red: color_get_red(colspec), green: color_get_green(colspec), blue: color_get_blue(colspec), index: PlayerData[i].index})
+						with (jugador){
+							if (index >= 4){
+								var specil_data = Player_icons[index - 4];
+								special_data.sprite = specil_data.sprite;
+								special_data.spr_inside = specil_data.spr_inside;
+								special_data.spr_mask = specil_data.spr_mask;
+								special_data.playerrot = specil_data.playerrot;
+								special_data.shaperange = specil_data.shaperange;
+							}else{
+								if (index%2 == 0){
+									special_data.playerrot = 45;
+									special_data.shaperange = 42;
+								}else{ if (index == 3){
+									special_data.shaperange = 39;
+								}}
+							}
+						}
+						array_push(PlayerInstances, jugador);
+					}
+				}
+				if (instanceof(Init) == "function"){
+					try{
+						Init();
+					}catch (e){
+						show_message("Init: " + e.message);
+					}
+				}
 				for (var i=0;i<Players;i++){
-					var colspec = make_color_hsv(PlayerData[i].hue, PlayerData[i].saturation, PlayerData[i].value);
-					var jugador = instance_create_depth(246, 250 + 400/(Players + 1)*(i + 1), 0, obj_player, {control_type: PlayerData[i].control_type, control_id: PlayerData[i].control_id, zurdo: PlayerData[i].zurdo, modo: (Mode != mode.none) ? Mode : mode.shape, red: color_get_red(colspec), green: color_get_green(colspec), blue: color_get_blue(colspec), index: PlayerData[i].index})
-					with (jugador){
-						if (index >= 4){
-							var specil_data = Player_icons[index - 4];
-							special_data.sprite = specil_data.sprite;
-							special_data.spr_inside = specil_data.spr_inside;
-							special_data.spr_mask = specil_data.spr_mask;
-							special_data.playerrot = specil_data.playerrot;
-							special_data.shaperange = specil_data.shaperange;
-						}else{
-							if (index%2 == 0){
-								special_data.playerrot = 45;
-								special_data.shaperange = 42;
-							}else{ if (index == 3){
-								special_data.shaperange = 39;
-							}}
+					var player_instance = PlayerInstances[i];
+					if (instanceof(player_instance.Init) == "function"){
+						try{
+							player_instance.Init(player_instance);
+						}catch (e){
+							show_message("PlayerInstances[" + string(i) + "]: " + e.message);
 						}
 					}
-					array_push(PlayerInstances, jugador);
 				}
+				state = level.waiting;
 			}
-			if (instanceof(Init) == "function"){
-				try{
-					Init();
-				}catch (e){
-					show_message("Init: " + e.message);
-				}
-			}
-			for (var i=0;i<Players;i++){
-				var player_instance = PlayerInstances[i];
-				if (instanceof(player_instance.Init) == "function"){
-					try{
-						player_instance.Init(player_instance);
-					}catch (e){
-						show_message("PlayerInstances[" + string(i) + "]: " + e.message);
-					}
-				}
-			}
-			state = level.waiting;
 		break;
 		case level.waiting:
 			timer++;
@@ -85,6 +87,7 @@ if (room == rm_level){
 					audio_sound_loop_end(track[0], barSegment.musicLoop[0].staticFinish);
 				}
 				music = audio_play_sound(track[0], 100, (array_length(barSegment.musicLoop) > 0));
+				audio_sound_gain(music, Volume.music);
 				if (barSegment.start > 0){
 					audio_sound_set_track_position(music, barSegment.start);
 				}
@@ -872,14 +875,12 @@ if (room == rm_level){
 				death.color = c_pink;
 			}
 			var fun = function(a,b){
-				if (a.depth - b.depth >= 0){
+				if (a.depth - b.depth > 0){
 					return 1;
 				}else{
 					return -1;
 				}
 			}
-			array_sort(Bullets.Alive, fun);
-			array_sort(Background.Alive, fun);
 			length = array_length(Checkpoints);
 			for (var i=0;i<length;i++){
 				var event = Checkpoints[i];
@@ -979,32 +980,6 @@ if (room == rm_level){
 					state = level.error;
 				}
 			}
-			length = array_length(Background.Alive);
-			for (var i=0;i<length;i++){
-				with (Background.Alive[i]){
-					if (instanceof(Update) == "function"){
-						try{
-							Update(id);
-						}catch (e){
-							show_message(e.message);
-							obj_game.state = level.error;
-						}
-					}
-				}
-			}
-			length = array_length(Bullets.Alive);
-			for (var i=0;i<length;i++){
-				with (Bullets.Alive[i]){
-					if (instanceof(Update) == "function"){
-						try{
-							Update(id);
-						}catch (e){
-							show_message(e.message);
-							obj_game.state = level.error;
-						}
-					}
-				}
-			}
 			UpdateBars(tempSeg);
 		break;
 		case level.rewind:
@@ -1055,8 +1030,6 @@ if (room == rm_level){
 					return -1;
 				}
 			}
-			array_sort(Bullets.Alive, fun);
-			array_sort(Background.Alive, fun);
 			if (timer >= 140 or positionTrack == 0){
 				state = level.update;
 				timer = 0;
@@ -1115,32 +1088,6 @@ if (room == rm_level){
 					state = level.error;
 				}
 			}
-			var length = array_length(Bullets.Alive); 
-			for (var i=0;i<length;i++){
-				with (Background.Alive[i]){
-					if (instanceof(Update) == "function"){
-						try{
-							Update(id);
-						}catch (e){
-							show_message(e.message);
-							obj_game.state = level.error;
-						}
-					}
-				}
-			}
-			length = array_length(Bullets.Alive); 
-			for (var i=0;i<length;i++){
-				with (Bullets.Alive[i]){
-					if (instanceof(Update) == "function"){
-						try{
-							Update(id);
-						}catch (e){
-							show_message(e.message);
-							obj_game.state = level.error;
-						}
-					}
-				}
-			}
 			UpdateBars();
 		break;
 		case level.ranking:
@@ -1195,8 +1142,12 @@ if (room == rm_level){
 			currentSong.state = false;
 		}
 	}
-	Camera.x = camera_get_view_x(view_camera[0]);
-	Camera.y = camera_get_view_y(view_camera[0]);
+	for (var i = 0; i < array_length(objects_3d); i++){
+		objects_3d[i].update();
+	}
+	step = delta_time/(1000000/60);
+	Camera.x += Scroll.x*step*pitch;
+	Camera.y += Scroll.y*step*pitch;
 }else{
 	if (state == menu.waiting){
 		if (audio_group_is_loaded(music_group) and audio_group_is_loaded(sound_group) and texture_is_ready("tex_grp_onetime")){

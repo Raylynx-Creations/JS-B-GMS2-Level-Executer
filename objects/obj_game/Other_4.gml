@@ -47,6 +47,7 @@ if (room == rm_menu and !Created){
 	songtimeAboveZero = -1;
 	var path = Levels[selected].dir;
 	LoadSprites(path);
+	Load3DModels(path);
 	LoadMusic(path);
 	LoadSounds(path);
 	LoadScript(path);

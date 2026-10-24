@@ -1,15 +1,17 @@
 {
-  "$GMSound":"",
+  "$GMSound":"v2",
   "%Name":"snd_difficulty",
   "audioGroupId":{
     "name":"sound_group",
     "path":"audiogroups/sound_group",
   },
   "bitDepth":1,
-  "bitRate":128,
+  "channelFormat":0,
   "compression":0,
+  "compressionQuality":4,
   "conversionMode":0,
   "duration":1.065986,
+  "exportDir":"",
   "name":"snd_difficulty",
   "parent":{
     "name":"Sounds",
@@ -20,6 +22,5 @@
   "resourceVersion":"2.0",
   "sampleRate":44100,
   "soundFile":"snd_difficulty.ogg",
-  "type":0,
   "volume":1.0,
 }

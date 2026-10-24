@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"DotobjMtlLoadFromBuffer",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"DotobjMtlLoadFromBuffer",
+  "parent":{
+    "name":"Loaders",
+    "path":"folders/dotobj/Loaders.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

@@ -1,0 +1,13 @@
+{
+  "$GMScript":"v1",
+  "%Name":"DotobjAliasPathSubstring",
+  "isCompatibility":false,
+  "isDnD":false,
+  "name":"DotobjAliasPathSubstring",
+  "parent":{
+    "name":"Aliasing",
+    "path":"folders/dotobj/Aliasing.yy",
+  },
+  "resourceType":"GMScript",
+  "resourceVersion":"2.0",
+}

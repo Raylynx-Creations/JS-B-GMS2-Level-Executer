@@ -1,3 +1,12 @@
+if (instanceof(Update) == "function"){
+	try{
+		Update(id);
+	}catch (e){
+		show_message(e.message);
+		obj_game.state = level.error;
+	}
+}
+
 if (is_struct(spriteiomdsfilasmdanls)){
 	if (variable_struct_exists(spriteiomdsfilasmdanls, "animation_times") and !variable_struct_exists(spriteiomdsfilasmdanls,"pause")){
 		spriteiomdsfilasmdanls.timer += delta_time*spriteiomdsfilasmdanls.animation_speed/10000;
@@ -18,6 +27,7 @@ if (is_struct(spriteiomdsfilasmdanls)){
 		}
 	}
 }
+
 if (SongTime >= DeathTime){
 	instance_destroy();
 }
