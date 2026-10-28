@@ -1,4 +1,4 @@
-AI = (room == rm_menu);
+AI = false;
 Inmovil = false;
 maxHP = MaxHP;
 HP = maxHP;

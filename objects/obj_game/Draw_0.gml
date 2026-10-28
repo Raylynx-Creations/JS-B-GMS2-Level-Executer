@@ -4,7 +4,7 @@ if (room == rm_level){
 	length = array_length(Checkpoints);
 	for (var i=0;i<length;i++){
 		var event = Checkpoints[i];
-		var position = 1600 - 360*(SongTime + event.offset - event.time);
+		var position = Camera.x + 1600 - 360*(SongTime + event.offset - event.time);
 		var color = c_cyan;
 		if (!is_string(event.reference)){
 			if (event.damage > 0){
@@ -17,5 +17,10 @@ if (room == rm_level){
 	}
 	if (instanceof(Draw) == "function"){
 		Draw();
+	}
+	if (state == level.ranking){
+		draw_set_halign(fa_center);
+		draw_set_font(fnt_nexaBold90);
+		draw_text(800, 300, "Happy halloween!!\nYou won! :D")
 	}
 }

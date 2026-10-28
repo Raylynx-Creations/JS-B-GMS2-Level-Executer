@@ -884,7 +884,7 @@ if (room == rm_level){
 			length = array_length(Checkpoints);
 			for (var i=0;i<length;i++){
 				var event = Checkpoints[i];
-				var position = 1600 - 360*(SongTime + event.offset - event.time);
+				var position = Camera.x + 1600 - 360*(SongTime + event.offset - event.time);
 				var collected = false;
 				length2 = array_length(PlayerInstances);
 				for (var j=0;j<length2;j++){
@@ -937,7 +937,11 @@ if (room == rm_level){
 							}else{ if (is_string(event.reference)){
 								maxHP = MaxHP;
 								HP = maxHP;
-								//obj_game.state = level.ranking;
+								obj_game.barLevel.state = levelBar.finish;
+								obj_game.barLevel.timer = 0;
+								instance_destroy(obj_bullet);
+								instance_destroy(obj_background);
+								obj_game.state = level.ranking;
 							}}
 						}
 					}
@@ -966,6 +970,7 @@ if (room == rm_level){
 						event.reference.triggered = true;
 						currentCheckpoint[0] = event.barIndex;
 						currentCheckpoint[1] = event.index;
+						currentCheckpoint[2] = event.reference.music_pos;
 					}
 					array_delete(Checkpoints, i, 1);
 					i--;
@@ -1036,16 +1041,19 @@ if (room == rm_level){
 				death.timer = 0;
 				death.color = c_white;
 				glitch.state = 2;
+				pitch = 1;
 				audio_stop_sound(music);
 				var item = barLevel.order[max(currentCheckpoint[0], 0)];
 				var indexx = item.musicIndex;
 				var item2 = Levels[selected];
 				currentTrack = item2.song[indexx] + " by " + item2.artist[indexx][0];
 				var track = Music[$ currentTrack];
-				music = audio_play_sound(track[0], 100, false);
+				music = audio_play_sound(track[0], 100, false, Volume.music);
 				//move music ahead
+				audio_sound_set_track_position(music, max(currentCheckpoint[2], 0))
 				songtimeAboveZero = item.finish;
 				songDuration = audio_sound_length(music);
+				SongTime = max(currentCheckpoint[2], 0);
 				//Restart checkpoints
 				var length2 = array_length(PlayerInstances);
 				for (var j=0;j<length2;j++){
@@ -1071,9 +1079,13 @@ if (room == rm_level){
 					}
 				}
 				audio_play_sound(snd_checkpoint,0,false);
+				instance_destroy(obj_bullet)
+				instance_destroy(obj_background)
+				array_delete(Background.Alive, 0, array_length(Background.Alive));
+				array_delete(Background.Dead, 0, array_length(Background.Dead));
 				if (instanceof(Rewind) == "function"){
 					try{
-						Rewind();
+						Rewind(currentCheckpoint[1]);
 					}catch (e){
 						show_message(e.message);
 						state = level.error;

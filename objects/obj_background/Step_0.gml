@@ -30,6 +30,6 @@ if (ismodelnodshnsodhau){
 	}
 }
 
-if (SongTime >= DeathTime){
+if (SongTime >= DeathTime or SongTime < SpawnTime){
 	instance_destroy();
 }

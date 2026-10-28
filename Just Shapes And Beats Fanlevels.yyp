@@ -149,7 +149,6 @@
     {"id":{"name":"obj_playerconf","path":"objects/obj_playerconf/obj_playerconf.yy",},},
     {"id":{"name":"obj_reimu","path":"objects/obj_reimu/obj_reimu.yy",},},
     {"id":{"name":"rm_level","path":"rooms/rm_level/rm_level.yy",},},
-    {"id":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},},
     {"id":{"name":"__d3d_block_internal","path":"scripts/__d3d_block_internal/__d3d_block_internal.yy",},},
     {"id":{"name":"__d3d_block_wireframe_internal","path":"scripts/__d3d_block_wireframe_internal/__d3d_block_wireframe_internal.yy",},},
     {"id":{"name":"__d3d_floor_internal","path":"scripts/__d3d_floor_internal/__d3d_floor_internal.yy",},},
@@ -318,7 +317,6 @@
   "resourceType":"GMProject",
   "resourceVersion":"2.0",
   "RoomOrderNodes":[
-    {"roomId":{"name":"rm_menu","path":"rooms/rm_menu/rm_menu.yy",},},
     {"roomId":{"name":"rm_level","path":"rooms/rm_level/rm_level.yy",},},
   ],
   "templateType":null,

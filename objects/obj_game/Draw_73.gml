@@ -1,4 +1,4 @@
-if (room == rm_menu){
+if (false){
 	draw_set_font(fnt_nexaBold90);
 	draw_set_halign(fa_center);
 	switch (state){

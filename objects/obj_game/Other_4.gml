@@ -1,4 +1,4 @@
-if (room == rm_menu and !Created){
+if (false and !Created){
 	Dead_Players = false;
 	array_delete(PlayerInstances,0,array_length(PlayerInstances));
 	if (variable_struct_names_count(Sounds) > 0){

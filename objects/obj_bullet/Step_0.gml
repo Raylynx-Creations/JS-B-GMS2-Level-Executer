@@ -28,6 +28,6 @@ if (is_struct(spriteiomdsfilasmdanls)){
 	}
 }
 
-if (SongTime >= DeathTime){
+if (SongTime >= DeathTime or SongTime < SpawnTime){
 	instance_destroy();
 }

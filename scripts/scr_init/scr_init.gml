@@ -1297,7 +1297,7 @@ function DrawProgressBarEvents(event, fullAlpha, positionX, positionY, item, bar
 				}else{ if (event.checkpoint){
 					if (event.damage > 0){
 						draw_sprite_ext(spr_event, 0, 447 + positionX, 24 + positionY, 0.5, 0.5, 0, c_pink, fullAlpha);
-					}else if (damage == 0){
+					}else if (event.damage == 0){
 						draw_sprite_ext(spr_event, 0, 447 + positionX, 24 + positionY, 0.5, 0.5, 0, c_cyan, fullAlpha);
 					}else{
 						draw_sprite_ext(spr_event, 0, 447 + positionX, 24 + positionY, 0.5, 0.5, 0, c_green2, fullAlpha);
@@ -4360,8 +4360,12 @@ function setLevel(a){
 					if (variable_struct_exists(eventsCopy[j], "finish")){
 						eventsCopy[j].finish -= a[i - 1].finish - a[i].start - a[i - 1].totalSkip;
 					}
-					array_push(a[i].events, eventsCopy[j]);
 				}
+				length2 = array_length(a[i].events);
+				for (var j=0;j<length2;j++){
+					array_push(eventsCopy, a[i].events[j]);
+				}
+				a[i].events = eventsCopy;
 			}
 			var length3 = array_length(a[i].events);
 			for (var j=specialOne; j<length3; j++){
@@ -4530,7 +4534,7 @@ function setLevel(a){
 					length3--;
 					continue;
 				}
-				if (!variable_struct_exists(event,"ref") and (!a[i].extra or j != (array_length(a[i].events) - 1)) and (event.name == "checkpoint" or (event.name != "checkpoint" and event.checkpoint))){
+				if (!variable_struct_exists(event,"ref") and !variable_struct_exists(event, "created") and (!a[i].extra or j != (array_length(a[i].events) - 1)) and (event.name == "checkpoint" or (event.name != "checkpoint" and event.checkpoint))){
 					event.created = false;
 					if (event.name != "checkpoint" and event.checkpoint and event.waitTriggered){
 						event.triggered = false;
@@ -4572,7 +4576,7 @@ function setLevel(a){
 				a[i + 1].events[pos].finish -= a[i].finish - a[i + 1].start;
 			}
 			if (a[i].endCheckpoint.enabled){
-				array_insert(a[i].events, 0, {name: "checkpoint", special: true, time: a[i].finish, offset: a[i].totalSkip, damage: a[i].endCheckpoint.damage});
+				array_insert(a[i].events, 0, {name: "checkpoint", special: true, index: a[i].endCheckpoint.index, music_pos: a[i].endCheckpoint.music_pos, time: a[i].finish, offset: a[i].totalSkip, damage: a[i].endCheckpoint.damage});
 			}
 		}
 		if (obj_game.configuringSegments){
@@ -5165,6 +5169,7 @@ function get_level_scroll(){
 Catspeak.applyPreset(CatspeakPreset.ARRAY);
 Catspeak.applyPreset(CatspeakPreset.MATH);
 Catspeak.applyPreset(CatspeakPreset.RANDOM);
+Catspeak.applyPreset(CatspeakPreset.TYPE);
 Catspeak.interface.exposeFunction("beats_to_seconds", beats_to_seconds);
 Catspeak.interface.exposeFunction("update_skeleton", update_skeleton);
 Catspeak.interface.exposeConstant("Players", PlayerInstances);
@@ -5172,7 +5177,6 @@ Catspeak.interface.exposeConstant("spr_pixel", spr_pixel);
 Catspeak.interface.exposeConstant("c_pink", c_pink);
 Catspeak.interface.exposeFunction("get_songtime", getSongtime);
 Catspeak.interface.exposeFunction("get_loops", getLoops);
-Catspeak.interface.exposeFunction("string", string);
 Catspeak.interface.exposeFunction("create_bullet", createbullet);
 Catspeak.interface.exposeFunction("create_background", createbackground);
 Catspeak.interface.exposeFunction("create_model", createmodel);
@@ -5192,6 +5196,7 @@ Catspeak.interface.exposeFunction("play_sound", playSound);
 Catspeak.interface.exposeFunction("volume_sound", volumeSound);
 Catspeak.interface.exposeFunction("set_level", setLevel);
 Catspeak.interface.exposeFunction("show_message", show_message);
+Catspeak.interface.exposeFunction("instance_exists", instance_exists);
 Catspeak.interface.exposeFunction("show_debug_message", show_debug_message);
 Catspeak.interface.exposeFunction("set_level_scroll", set_level_scroll);
 Catspeak.interface.exposeFunction("get_level_scroll", get_level_scroll);
