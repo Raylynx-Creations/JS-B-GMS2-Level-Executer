@@ -192,6 +192,7 @@ function LoadSprites(path){
 			}
 		}
 		dir = file_find_first("Levels/" + path + "/Sprites/*.png", 0);
+		obj_game.dir = dir;
 		var func = function(elem,index){return (elem == dir)};
 		while (dir != ""){
 			if (array_find_index(specil_sprites,func) < 0){

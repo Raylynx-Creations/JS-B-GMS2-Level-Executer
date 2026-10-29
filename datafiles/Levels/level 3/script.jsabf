@@ -873,6 +873,11 @@ init_event( fun{
 		}
 		
 		_inst.image_angle += 15;
+		
+		let _camera = get_level_position();
+		if (_inst.y > 950 or _inst.y < -50 or _camera.x - 240 > _inst.x){
+			kill_bullet(_inst)
+		}
 	}
 	small_skull_init = fun(_inst){
 		let _mult = _inst.scalex/180;
