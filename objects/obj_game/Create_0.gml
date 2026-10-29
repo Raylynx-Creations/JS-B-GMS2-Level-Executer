@@ -1,5 +1,5 @@
 LoadLevels();
-//LoadPlayerIcons();
+LoadPlayerIcons();
 selected = 2;
 PlayerData = LoadPlayerConfig();
 MaxHP = Levels[selected].hp;
